@@ -78,14 +78,14 @@ int main() {
     // ----------------------------------------------------
     // 3. Connect window input → editor input
     // ----------------------------------------------------
-    window.SetKeyPressedCallback([&](int key, int scancode, int action, int mods) {
+    window.SetKeyPressedCallback([&](int key, int /*scancode*/, int action, int /*mods*/) {
         InputEvent ev;
         ev.type = InputEventType::Key;
         ev.data = MakeKeyEventFromGLFW(key, action, 0);
         editor.OnInput(ev);
     });
 
-    window.SetMouseButtonCallback([&](int button, int action, int mods) {
+    window.SetMouseButtonCallback([&](int button, int action, int /*mods*/) {
         double x, y;
         glfwGetCursorPos(window.GetNative(), &x, &y);
         InputEvent ev;

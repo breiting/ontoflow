@@ -24,9 +24,9 @@ add_library(ontoflow_render STATIC
 target_include_directories(ontoflow_render
 PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/inc
-	${CMAKE_CURRENT_SOURCE_DIR}/../../extern
-	${CMAKE_CURRENT_SOURCE_DIR}/../../extern/stb
-	${CMAKE_CURRENT_SOURCE_DIR}/../../extern/glad/include
+	SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/../../extern
+	SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/../../extern/stb
+	SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/../../extern/glad/include
 	${GEN_INC_DIR}
 )
 

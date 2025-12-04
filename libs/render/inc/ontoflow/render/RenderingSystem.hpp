@@ -2,7 +2,7 @@
 #include <memory>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/ICamera.hpp>
-#include <ontoflow/editor/ViewController.hpp> // Not directly used in this header, but might be part of the concept
+#include <ontoflow/editor/ViewController.hpp>  // Not directly used in this header, but might be part of the concept
 #include <ontoflow/render/AxisRenderer.hpp>
 #include <ontoflow/render/DirectionalLight.hpp>
 #include <ontoflow/render/IRenderer.hpp>
@@ -64,19 +64,18 @@ class RenderingSystem {
     void SetShowAxis(bool b);
 
    private:
-    std::unique_ptr<IRenderer> m_Renderer; ///< The concrete renderer implementation.
-    std::shared_ptr<DirectionalLight> m_Light; ///< The primary directional light source.
-    std::unique_ptr<AxisRenderer> m_Axis; ///< Renderer for the coordinate axis.
-    
+    std::unique_ptr<IRenderer> m_Renderer;      ///< The concrete renderer implementation.
+    std::shared_ptr<DirectionalLight> m_Light;  ///< The primary directional light source.
+    std::unique_ptr<AxisRenderer> m_Axis;       ///< Renderer for the coordinate axis.
+
     // Maps to store renderable geometry and their materials, keyed by ECS Entity ID.
     std::unordered_map<domain::Entity, std::shared_ptr<Mesh>> m_Meshes;
     std::unordered_map<domain::Entity, uint32_t> m_MeshVersions;
     std::unordered_map<domain::Entity, std::shared_ptr<LineSet>> m_Lines;
     std::unordered_map<domain::Entity, std::shared_ptr<Material>> m_Material;
 
-    bool m_PointsDirty = true; ///< Flag indicating if the point set needs to be re-uploaded.
-    std::shared_ptr<PointSet> m_Points; ///< Renderable object for all position components.
-    std::shared_ptr<Material> m_PointSetMaterial; ///< Material for rendering point sets.
+    std::shared_ptr<PointSet> m_Points;            ///< Renderable object for all position components.
+    std::shared_ptr<Material> m_PointSetMaterial;  ///< Material for rendering point sets.
 };
 
 }  // namespace of::render

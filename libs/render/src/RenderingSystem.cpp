@@ -45,7 +45,7 @@ void RenderingSystem::SetViewportSize(int w, int h) {
  * \param registry The central ECS registry.
  * \return True if initialization was successful, false otherwise.
  */
-bool RenderingSystem::Init(Registry& registry) {
+bool RenderingSystem::Init(Registry& /*registry*/) {
     m_Axis = std::make_unique<AxisRenderer>();
     return m_Axis->Init();
 }
