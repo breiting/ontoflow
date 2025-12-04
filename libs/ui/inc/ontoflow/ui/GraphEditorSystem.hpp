@@ -21,25 +21,31 @@ class GraphEditorSystem {
     GraphEditorSystem(domain::Registry& registry, NodeEditorRegistry& editorRegistry);
 
     /**
-     * @brief Toggle visibility of the graph editor window.
-     */
-    void ToggleVisibility();
-
-    /**
      * @brief Draw the entire node editor panel.
      * @return True if the graph topology changed (links added/removed).
      */
     bool DrawPanel();
 
-   private:
-    bool m_visible = true;
+    /**
+     * @brief Draws the node editor into the *currently active* ImGui window.
+     *
+     * This does not open or close any ImGui window. It expects that the caller
+     * already called ImGui::Begin() on some window. This is ideal for embedding
+     * the node editor as the main content region.
+     *
+     * @return True if the graph topology changed (links added/removed).
+     */
+    bool DrawEmbedded();
 
+   private:
+    bool DrawNodeEditorInternal();
+    glm::vec2 GetMouseGridPos() const;
+
+   private:
     domain::Registry& m_registry;
     NodeEditorRegistry& m_editorReg;
 
     glm::vec2 m_spawnPos{0.f, 0.f};
-
-    glm::vec2 GetMouseGridPos() const;
 };
 
 }  // namespace of::ui

@@ -31,13 +31,44 @@ Editor::~Editor() {
     ImNodes::DestroyContext();
 }
 
-/**
- * @brief Draws UI windows (graph editor + other panels).
- */
 void Editor::DrawUI() {
-    if (m_GraphEditorSystem && m_GraphEditorSystem->DrawPanel()) {
-        m_NeedsEvaluation = true;
+    // Fullscreen host window for main content
+    ImGuiViewport* vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(vp->Pos);
+    ImGui::SetNextWindowSize(vp->Size);
+    ImGui::SetNextWindowViewport(vp->ID);
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
+                             ImGuiWindowFlags_NoNavFocus;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+    if (ImGui::Begin("MainViewport", nullptr, flags)) {
+        ImGui::PopStyleVar(2);
+
+        bool changed = false;
+        if (m_GraphEditorSystem) {
+            // Draw node editor as embedded content
+            changed |= m_GraphEditorSystem->DrawEmbedded();
+        }
+
+        if (changed)
+            m_NeedsEvaluation = true;
+    } else {
+        ImGui::PopStyleVar(2);
     }
+
+    ImGui::End();
+
+    // ----------------- 3D VIEWPORT WINDOW (floating/dockable) -----------------
+    // Später für Rendering nutzen, aktuell nur Dummy:
+    if (ImGui::Begin("3D View")) {
+        ImGui::TextUnformatted("3D rendering will go here.");
+        // Hier später deinen Render-Target / OpenGL / ImGui-Image einbauen
+    }
+    ImGui::End();
 }
 
 /**
@@ -120,11 +151,6 @@ void Editor::HandleKey(const KeyEvent& key) {
     if (key.text == 'p') {
         LOG(Info) << "Dumping registry...";
         m_Registry.Dump();
-    }
-
-    // Space toggles visibility of node editor
-    if (key.code == KeyCode::Space && m_GraphEditorSystem) {
-        m_GraphEditorSystem->ToggleVisibility();
     }
 }
 
