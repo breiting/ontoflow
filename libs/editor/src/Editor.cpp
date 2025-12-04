@@ -1,15 +1,11 @@
 #include <imgui.h>
 #include <imnodes.h>
 
-#include <cctype>
 #include <ontoflow/core/Logger.hpp>
 #include <ontoflow/domain/Components.hpp>
+#include <ontoflow/domain/NodeData.hpp>
 #include <ontoflow/editor/Editor.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
-#include <ontoflow/ui/GraphEditorSystem.hpp>
-#include <variant>
-
-#include "ontoflow/domain/Types.hpp"
 
 using namespace of::domain;
 using namespace of::engine;
@@ -18,40 +14,39 @@ using namespace of::ui;
 namespace of::editor {
 
 /**
- * \brief Constructs an Editor instance.
- * \param ctx A reference to the ToolContext, providing access to core services.
+ * @brief Constructs the Editor. Initializes ImNodes and sets up graph systems.
  */
 Editor::Editor(domain::Registry& registry, domain::GeometrySystem& geometrySystem)
-    : m_Registry(registry), m_GeometrySystem(geometrySystem) {
-    // Initialize ImNodes
+    : m_Registry(registry), m_GeometrySystem(geometrySystem), m_NodeEditorRegistry(m_UiAllocator) {
     ImNodes::CreateContext();
     ImNodes::StyleColorsDark();
 
     m_Evaluator = std::make_unique<GraphEvaluator>(m_Registry);
-    m_GraphEditorSystem = std::make_unique<GraphEditorSystem>(m_Registry);
+
+    // graph editor now requires registry + editor registry
+    m_GraphEditorSystem = std::make_unique<GraphEditorSystem>(m_Registry, m_NodeEditorRegistry);
 }
 
 Editor::~Editor() {
     ImNodes::DestroyContext();
 }
 
+/**
+ * @brief Draws UI windows (graph editor + other panels).
+ */
 void Editor::DrawUI() {
-    if (m_GraphEditorSystem) {
-        if (m_GraphEditorSystem->DrawPanel()) {
-            m_NeedsEvaluation = true;
-        }
+    if (m_GraphEditorSystem && m_GraphEditorSystem->DrawPanel()) {
+        m_NeedsEvaluation = true;
     }
 }
 
 /**
- * \brief Called once per frame (or simulation step) to update active tools and camera.
- * \param dt Time delta since last frame.
+ * @brief Called every frame to update cameras and process evaluation.
  */
 void Editor::Update(double dt) {
-    // 1. Interaction Loop (Dataflow Updates)
     if (m_NeedsEvaluation) {
-        if (m_BoxNodeID != INVALID_ENTITY_ID && m_Evaluator) {
-            LOG(Info) << "Editor: Evaluating Graph...";
+        if (m_BoxNodeID != INVALID_ENTITY) {
+            LOG(Info) << "Editor: Evaluating Dataflow Graph...";
             m_Evaluator->Evaluate(m_BoxNodeID);
             SyncMeshes();
         }
@@ -61,56 +56,34 @@ void Editor::Update(double dt) {
     m_ViewController.Update(dt);
 }
 
-/**
- * \brief Sets the 2D camera for the ViewController.
- * \param cam A shared pointer to the 2D camera implementation.
- */
 void Editor::SetCamera2D(std::shared_ptr<ICamera> cam) {
     m_ViewController.SetCamera2D(cam);
 }
 
-/**
- * \brief Sets the 3D camera for the ViewController.
- * \param cam A shared pointer to the 3D camera implementation.
- */
 void Editor::SetCamera3D(std::shared_ptr<ICamera> cam) {
     m_ViewController.SetCamera3D(cam);
 }
 
-/**
- * \brief Sets the viewport size for the ViewController's cameras.
- * \param w Width of the viewport.
- * \param h Height of the viewport.
- */
 void Editor::SetViewportSize(int w, int h) {
     m_ViewController.SetViewportSize(w, h);
 }
 
-/**
- * \brief Returns a pointer to the currently active camera.
- * \return A pointer to the ICamera.
- */
 ICamera* Editor::GetActiveCamera() {
     return m_ViewController.GetActiveCamera();
 }
 
 /**
- * \brief Feeds an input event into the editor for processing.
- * Events are dispatched first to the active tool, then to the camera controller.
- * \param ev The input event.
+ * @brief Dispatch input to tools + cameras.
  */
 void Editor::OnInput(const InputEvent& ev) {
-    // Global keyboard shortcuts
-    if (auto* key = AsKey(ev)) {
+    if (auto* key = AsKey(ev))
         HandleKey(*key);
-    }
 
     m_ViewController.OnInput(ev);
 }
 
 /**
- * \brief Handles keyboard events, including global shortcuts and command buffer input.
- * \param key The KeyEvent to process.
+ * @brief Handle keyboard shortcuts.
  */
 void Editor::HandleKey(const KeyEvent& key) {
     if (!key.pressed)
@@ -118,117 +91,108 @@ void Editor::HandleKey(const KeyEvent& key) {
 
     float diff = 0.1;
 
-    // Interaction Logic: Modify Graph
-    if (key.text == 'k' && m_WidthNodeID != INVALID_ENTITY_ID) {
-        auto* node = m_Registry.GetComponent<NodeComponent>(m_WidthNodeID);
-        if (node && std::holds_alternative<double>(node->outputs[0].value)) {
-            double val = std::get<double>(node->outputs[0].value);
-            node->outputs[0].value = val + diff;
-            LOG(Info) << "Editor: Width increased to " << val + diff;
-            m_NeedsEvaluation = true;
-            return;  // Consumed
+    // Debug: adjust width value
+    if (key.text == 'k' && m_WidthNodeID != INVALID_ENTITY) {
+        if (auto* node = m_Registry.GetComponent<NodeComponent>(m_WidthNodeID)) {
+            if (auto* val = std::get_if<double>(&node->outputs[0].value)) {
+                *val += diff;
+                node->isDirty = true;
+                m_NeedsEvaluation = true;
+                LOG(Info) << "Width increased.";
+                return;
+            }
         }
     }
 
-    if (key.text == 'j' && m_WidthNodeID != INVALID_ENTITY_ID) {
-        auto* node = m_Registry.GetComponent<NodeComponent>(m_WidthNodeID);
-        if (node && std::holds_alternative<double>(node->outputs[0].value)) {
-            double val = std::get<double>(node->outputs[0].value);
-            node->outputs[0].value = val - diff;
-            LOG(Info) << "Editor: Width decreased to " << val - diff;
-            m_NeedsEvaluation = true;
-            return;  // Consumed
+    if (key.text == 'j' && m_WidthNodeID != INVALID_ENTITY) {
+        if (auto* node = m_Registry.GetComponent<NodeComponent>(m_WidthNodeID)) {
+            if (auto* val = std::get_if<double>(&node->outputs[0].value)) {
+                *val -= diff;
+                node->isDirty = true;
+                m_NeedsEvaluation = true;
+                LOG(Info) << "Width decreased.";
+                return;
+            }
         }
     }
 
-    // Ignore special keys (like Enter), tools should handle them if needed.
-    if (key.text == 0)
-        return;
-
-    // Only process simple letter characters (without Ctrl/Alt modifiers)
-    if (key.ctrl || key.alt)
-        return;
-
-    // Example: 'p' to dump registry (global shortcut)
+    // 'p' → dump ECS registry
     if (key.text == 'p') {
-        LOG(Info) << "Editor: 'p' pressed, dumping registry...";
+        LOG(Info) << "Dumping registry...";
         m_Registry.Dump();
     }
 
-    // 'g' to toggle graph editor
+    // Space toggles visibility of node editor
     if (key.code == KeyCode::Space && m_GraphEditorSystem) {
         m_GraphEditorSystem->ToggleVisibility();
     }
-
-    char c = static_cast<char>(std::tolower(static_cast<unsigned char>(key.text)));
-    m_CommandBuffer.push_back(c);
-
-    // Keep only the last 2 characters in the command buffer (for commands like "ip", "il", "ic", "is")
-    if (m_CommandBuffer.size() > 2)
-        m_CommandBuffer.erase(0,
-                              m_CommandBuffer.size() - 2);  // Erase from beginning, keeping only the last 2 characters
 }
 
+/**
+ * @brief Build a simple demonstration graph (Value → Box).
+ */
 void Editor::InitializeDemoGraph() {
     auto& reg = m_Registry;
     auto& nodeReg = NodeRegistry::Instance();
+    auto& backend = m_GeometrySystem.GetBackend();
 
-    // Capture IGeometryBackend reference
-    IGeometryBackend& backend = m_GeometrySystem.GetBackend();
-
-    // Register Nodes Locally (or rely on main, but better here for context)
-    // 1. Value Node
+    // -------------------------
+    // Register VALUE node
+    // -------------------------
     NodeDefinition valDef;
     valDef.name = "Value (Float)";
-    valDef.outputs.push_back(Pin{"Out", PinType::FLOAT, 0.0f, {}});
-    valDef.compute = [](NodeComponent&, Registry&) { /* Static */ };
+    valDef.outputs.push_back(Pin{"Out", PinType::FLOAT, 0.0, {}});
+    valDef.compute = [](NodeComponent&, Registry&) {
+    };
     nodeReg.RegisterNode("VALUE_FLOAT", valDef);
 
-    // 2. Box Node (Smart Reuse)
+    // -------------------------
+    // Register BOX node
+    // -------------------------
     NodeDefinition boxDef;
     boxDef.name = "Box";
-    boxDef.inputs.push_back(Pin{"Width", PinType::FLOAT, 1.0f, {}});
-    boxDef.inputs.push_back(Pin{"Length", PinType::FLOAT, 1.0f, {}});
-    boxDef.inputs.push_back(Pin{"Height", PinType::FLOAT, 1.0f, {}});
-    boxDef.outputs.push_back(Pin{"Shape", PinType::GEOMETRY, 0.0f, {}});
+    boxDef.inputs.emplace_back("Width", PinType::FLOAT, 1.0, Connection{});
+    boxDef.inputs.emplace_back("Length", PinType::FLOAT, 1.0, Connection{});
+    boxDef.inputs.emplace_back("Height", PinType::FLOAT, 1.0, Connection{});
+    boxDef.outputs.emplace_back("Shape", PinType::GEOMETRY, PinValue{}, Connection{});
 
     boxDef.compute = [&backend](NodeComponent& node, Registry& r) {
-        double w = 10.0, l = 10.0, h = 10.0;
+        double w = std::get<double>(node.inputs[0].value);
+        double l = std::get<double>(node.inputs[1].value);
+        double h = std::get<double>(node.inputs[2].value);
 
-        if (std::holds_alternative<double>(node.inputs[0].value))
-            w = std::get<double>(node.inputs[0].value);
-        if (std::holds_alternative<double>(node.inputs[1].value))
-            l = std::get<double>(node.inputs[1].value);
-        if (std::holds_alternative<double>(node.inputs[2].value))
-            h = std::get<double>(node.inputs[2].value);
+        auto shape = backend.CreateBox(w, l, h);
 
-        auto handle = backend.CreateBox(w, l, h);
-
-        Entity bodyEnt;
-        if (std::holds_alternative<GeometryHandle>(node.outputs[0].value)) {
-            // Reuse
-            bodyEnt = std::get<GeometryHandle>(node.outputs[0].value).id;
-            // Update Handle
-            if (r.HasComponent<BodyComponent>(bodyEnt)) {
-                r.GetComponent<BodyComponent>(bodyEnt)->handle = handle;
+        // GeometryHandle output reuse
+        if (auto* gh = std::get_if<GeometryHandle>(&node.outputs[0].value)) {
+            if (gh->IsValid()) {
+                auto ent = gh->id;
+                if (auto* comp = r.GetComponent<BodyComponent>(ent))
+                    comp->handle = shape;
+                return;
             }
-        } else {
-            // Create New
-            bodyEnt = r.CreateEntity();
-            r.AddComponent<BodyComponent>(bodyEnt, BodyComponent{handle});
-            r.AddComponent<NameComponent>(bodyEnt, NameComponent{"Box_Body"});
-            node.outputs[0].value = GeometryHandle{bodyEnt};
         }
+
+        // Create new body
+        Entity newBody = r.CreateEntity();
+        r.AddComponent(newBody, BodyComponent{shape});
+        r.AddComponent(newBody, NameComponent{"Box_Body"});
+
+        node.outputs[0].value = GeometryHandle{newBody};
     };
+
     nodeReg.RegisterNode("GEOM_BOX", boxDef);
 
-    // Spawn Graph
+    // -------------------------
+    // Create the graph
+    // -------------------------
     m_WidthNodeID = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
-    Entity nLength = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
-    Entity nHeight = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
+    auto nLength = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
+    auto nHeight = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
+
     m_BoxNodeID = nodeReg.SpawnNode(reg, "GEOM_BOX");
 
-    // Init Values
+    // Assign values
     reg.GetComponent<NodeComponent>(m_WidthNodeID)->outputs[0].value = 2.0;
     reg.GetComponent<NodeComponent>(nLength)->outputs[0].value = 3.0;
     reg.GetComponent<NodeComponent>(nHeight)->outputs[0].value = 4.0;
@@ -237,33 +201,27 @@ void Editor::InitializeDemoGraph() {
     auto* boxNode = reg.GetComponent<NodeComponent>(m_BoxNodeID);
     boxNode->inputs[0].connection = {m_WidthNodeID, 0};
     boxNode->inputs[1].connection = {nLength, 0};
-    // boxNode->inputs[2].connection = {nHeight, 0};
+    boxNode->inputs[2].connection = {nHeight, 0};
 
-    // Initial Eval
     m_NeedsEvaluation = true;
 }
 
+/**
+ * @brief Convert all OCCT BodyComponents into MeshComponents.
+ */
 void Editor::SyncMeshes() {
-    auto& reg = m_Registry;
-    IGeometryBackend& backend = m_GeometrySystem.GetBackend();
+    auto& backend = m_GeometrySystem.GetBackend();
 
-    // Naive Sync: Iterate all entities with BodyComponent
-    // In a real system, we would track dirty flags or events.
-    // Since we just updated the graph, we know things might have changed.
-
-    auto entities = reg.Entities();  // Inefficient but works for MVP
-    for (Entity e : entities) {
-        if (reg.HasComponent<BodyComponent>(e)) {
-            auto* body = reg.GetComponent<BodyComponent>(e);
+    for (auto e : m_Registry.Entities()) {
+        if (auto* body = m_Registry.GetComponent<BodyComponent>(e)) {
             if (body->handle > 0) {
-                // Tesselate
-                Mesh meshData = backend.GetMeshFromShape(body->handle);
-                auto* meshComp = reg.GetComponent<MeshComponent>(e);
-                if (meshComp) {
-                    meshComp->version++;
-                    meshComp->mesh = std::move(meshData);
+                Mesh mesh = backend.GetMeshFromShape(body->handle);
+
+                if (auto* mc = m_Registry.GetComponent<MeshComponent>(e)) {
+                    mc->mesh = std::move(mesh);
+                    mc->version++;
                 } else {
-                    reg.AddComponent<MeshComponent>(e, MeshComponent{std::move(meshData)});
+                    m_Registry.AddComponent(e, MeshComponent{std::move(mesh), 0});
                 }
             }
         }

@@ -48,6 +48,18 @@ struct Pin {
     PinType type = PinType::FLOAT;
     PinValue value;         // Static data or Cache
     Connection connection;  // Topology (Input only)
+
+    /// Default constructor (required for std::vector)
+    Pin() = default;
+
+    /// Create a pin without initial value
+    Pin(std::string n, PinType t) : name(std::move(n)), type(t), value(std::monostate{}), connection{} {
+    }
+
+    /// Create a pin with all fields
+    Pin(std::string n, PinType t, PinValue v, Connection c = {})
+        : name(std::move(n)), type(t), value(std::move(v)), connection(std::move(c)) {
+    }
 };
 
 }  // namespace of::domain

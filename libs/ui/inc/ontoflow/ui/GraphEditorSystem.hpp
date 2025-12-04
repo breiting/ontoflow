@@ -1,61 +1,45 @@
 #pragma once
+/**
+ * @file GraphEditorSystem.hpp
+ * @brief UI system responsible for drawing and interacting with the
+ *        node graph using ImGui + ImNodes.
+ */
 
 #include <glm/vec2.hpp>
 #include <ontoflow/domain/Registry.hpp>
-
-// Forward declaration for ImGui context and ImNodes
-namespace ImNodes {
-using Context = void;
-}
+#include <ontoflow/ui/NodeEditorRegistry.hpp>
 
 namespace of::ui {
 
 /**
- * \brief System responsible for drawing the node graph editor.
- *
- * Manages the visualization and interaction with the parametric graph
- * using ImNodes. It handles rendering of parameter and feature nodes,
- * as well as the connections (links) between them.
+ * @class GraphEditorSystem
+ * @brief Renders the node graph and handles all interactions such as
+ *        creating nodes, linking pins, deleting links, and moving nodes.
  */
-class GraphEditorSystem final {
+class GraphEditorSystem {
    public:
-    /**
-     * \brief Constructs the GraphEditorSystem.
-     * \param registry Reference to the ECS registry containing the model data.
-     */
-    explicit GraphEditorSystem(domain::Registry& registry);
+    GraphEditorSystem(domain::Registry& registry, NodeEditorRegistry& editorRegistry);
 
     /**
-     * \brief Draws the main graph editor panel.
-     * Should be called inside an ImGui frame.
-     */
-    bool DrawPanel();
-
-    /**
-     * \brief Toggles the visibility of the graph editor window.
+     * @brief Toggle visibility of the graph editor window.
      */
     void ToggleVisibility();
 
     /**
-     * \brief Checks if the graph editor window is currently visible.
-     * \return True if visible, false otherwise.
+     * @brief Draw the entire node editor panel.
+     * @return True if the graph topology changed (links added/removed).
      */
-    bool IsVisible() const {
-        return m_IsVisible;
-    }
+    bool DrawPanel();
 
    private:
-    domain::Registry& m_Registry;
-    bool m_IsVisible = true;
+    bool m_visible = true;
 
-    // Helper to store position of newly created nodes
-    glm::vec2 m_CurrentMouseGridPosition{0.0f, 0.0f};
+    domain::Registry& m_registry;
+    NodeEditorRegistry& m_editorReg;
 
-    /**
-     * \brief Updates and returns the current mouse position in grid space.
-     * \return The mouse position in the ImNodes grid coordinate system.
-     */
-    glm::vec2 GetCurrentMouseGridPosition();
+    glm::vec2 m_spawnPos{0.f, 0.f};
+
+    glm::vec2 GetMouseGridPos() const;
 };
 
 }  // namespace of::ui

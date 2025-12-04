@@ -1,272 +1,156 @@
 #include <imgui.h>
 #include <imnodes.h>
 
-#include <ontoflow/core/Logger.hpp>
 #include <ontoflow/domain/Components.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
 #include <ontoflow/ui/GraphEditorSystem.hpp>
 
-using namespace of::engine;
-
-namespace {
-// Bit layout: [1 bit: isLink] [1 bit: isOutput] [8 bits: pinIndex] [22 bits: entityID]
-
-// Node ID = Entity ID (Direct mapping)
-
-int GetPinID(of::domain::EntityID nodeID, int pinIndex, bool isOutput) {
-    // Output bit is 30, PinIdx is 22-29, Entity is 0-21
-    int id = (static_cast<int>(nodeID) & 0x003FFFFF) | ((pinIndex & 0xFF) << 22);
-
-    if (isOutput)
-        id |= (1 << 30);
-
-    return id;
-}
-
-// Since connections live on the Input Pin, the Link ID is derived from the Input Pin ID.
-// We set the 31st bit to distinguish it from the Pin itself.
-int GetLinkID(of::domain::EntityID nodeID, int pinIndex) {
-    int pinId = GetPinID(nodeID, pinIndex, false);  // always input logic for links
-    return pinId | (1 << 31);                       // Top bit set = Link
-}
-
-struct DecodedPin {
-    of::domain::EntityID nodeID;
-    int pinIndex;
-    bool isOutput;
-};
-
-DecodedPin DecodePinID(int id) {
-    DecodedPin d;
-    d.nodeID = static_cast<of::domain::EntityID>(id & 0x003FFFFF);
-    d.pinIndex = (id >> 22) & 0xFF;
-    d.isOutput = (id & (1 << 30)) != 0;
-    return d;
-}
-
-// Helper for Link Decoding (we strip the top bit and treat as Pin)
-DecodedPin DecodeLinkID(int id) {
-    return DecodePinID(id & ~(1 << 31));
-}
-}  // namespace
-
 namespace of::ui {
 
-GraphEditorSystem::GraphEditorSystem(domain::Registry& registry) : m_Registry(registry) {
+GraphEditorSystem::GraphEditorSystem(domain::Registry& reg, NodeEditorRegistry& editorReg)
+    : m_registry(reg), m_editorReg(editorReg) {
 }
 
 void GraphEditorSystem::ToggleVisibility() {
-    m_IsVisible = !m_IsVisible;
+    m_visible = !m_visible;
 }
 
-// Helper to get color for pin type
-int GetPinColor(of::domain::PinType type) {
-    switch (type) {
-        case of::domain::PinType::FLOAT:
-            return IM_COL32(200, 200, 200, 255);  // Grey
-        case of::domain::PinType::INT:
-            return IM_COL32(100, 200, 100, 255);  // Green
-        case of::domain::PinType::GEOMETRY:
-            return IM_COL32(255, 100, 100, 255);  // Red
-        case of::domain::PinType::VEC3:
-            return IM_COL32(100, 100, 255, 255);  // Blue
-        default:
-            return IM_COL32(255, 255, 255, 255);
-    }
+glm::vec2 GraphEditorSystem::GetMouseGridPos() const {
+    ImVec2 mouse = ImGui::GetMousePos();
+    ImVec2 pan = ImNodes::EditorContextGetPanning();
+    ImVec2 local = ImVec2(mouse.x - pan.x, mouse.y - pan.y);
+    return {local.x, local.y};
 }
 
 bool GraphEditorSystem::DrawPanel() {
-    if (!m_IsVisible)
+    if (!m_visible)
         return false;
 
-    bool hasChanged = false;
+    bool graphChanged = false;
 
-    if (ImGui::Begin("OntoFlow Graph Editor", &m_IsVisible)) {
+    if (ImGui::Begin("OntoFlow Graph Editor", &m_visible)) {
         ImNodes::BeginNodeEditor();
 
-        // ---------------------------------------------------------
-        // 1. DRAW NODES
-        // ---------------------------------------------------------
-        // We iterate all entities that have a NodeComponent
-        std::vector<of::domain::Entity> entities = m_Registry.GetEntitiesWith<of::domain::NodeComponent>();
+        auto nodes = m_registry.GetEntitiesWith<domain::NodeComponent>();
 
-        for (auto entity : entities) {
-            auto* node = m_Registry.GetComponent<of::domain::NodeComponent>(entity);
-            auto* nameComp = m_Registry.GetComponent<of::domain::NameComponent>(entity);
+        // ------------------------------------------------------------
+        // Draw nodes
+        // ------------------------------------------------------------
+        for (auto e : nodes) {
+            auto* node = m_registry.GetComponent<domain::NodeComponent>(e);
+            auto* name = m_registry.GetComponent<domain::NameComponent>(e);
 
-            // Sync Position (First Run or External Change)
-            // Note: In a real app, you might want to only set this if it changed significantly
-            // or use ImNodes::SetNodeGridSpacePos only when loading a file.
-            // For now, let's trust ImNodes as the source of truth for UI position after init.
-            if (node->ui.x == 0.0f && node->ui.y == 0.0f) {
-                ImNodes::SetNodeGridSpacePos(static_cast<int>(entity),
-                                             ImVec2(100.0f * (float)entity, 100.0f * (float)entity));
-                // Mark as initialized so we don't reset it
-                node->ui.x = -1.0f;
-            }
+            int uiNode = m_editorReg.GetNodeId(e);
 
-            ImNodes::BeginNode(static_cast<int>(entity));
+            ImNodes::BeginNode(uiNode);
 
-            // Header
+            // Title bar
             ImNodes::BeginNodeTitleBar();
-            std::string title = nameComp ? nameComp->name : node->definitionID;
-            // Add Entity ID for debug visibility
-            title += " (" + std::to_string(entity) + ")";
-            ImGui::TextUnformatted(title.c_str());
+            std::string title = name ? name->name : node->definitionID;
+            ImGui::Text("%s (%u)", title.c_str(), e);
             ImNodes::EndNodeTitleBar();
 
-            // Inputs
+            // --------- INPUTS ----------
             for (size_t i = 0; i < node->inputs.size(); ++i) {
-                int pinId = GetPinID(entity, static_cast<int>(i), false);
-                ImNodes::PushColorStyle(ImNodesCol_Pin, GetPinColor(node->inputs[i].type));
-                ImNodes::BeginInputAttribute(pinId);
-
-                ImGui::Text("%s", node->inputs[i].name.c_str());
-
-                // If not connected, show a small drag widget for basic types?
-                // For now, keep it simple.
-                if (node->inputs[i].connection.targetNodeID == of::domain::INVALID_ENTITY_ID) {
-                    if (std::holds_alternative<double>(node->inputs[i].value)) {
-                        ImGui::SameLine();
-                        double* val = &std::get<double>(node->inputs[i].value);
-                        ImGui::PushItemWidth(50);
-                        if (ImGui::DragScalar(("##val" + std::to_string(pinId)).c_str(), ImGuiDataType_Double, val,
-                                              0.1f)) {
-                            node->isDirty = true;  // Mark dirty on manual change
-                        }
-                        ImGui::PopItemWidth();
-                    }
-                }
-
+                int pin = m_editorReg.GetPinId(e, i, false);
+                ImNodes::BeginInputAttribute(pin);
+                ImGui::TextUnformatted(node->inputs[i].name.c_str());
                 ImNodes::EndInputAttribute();
-                ImNodes::PopColorStyle();
             }
 
-            // Outputs
+            // --------- OUTPUTS ----------
             for (size_t i = 0; i < node->outputs.size(); ++i) {
-                int pinId = GetPinID(entity, static_cast<int>(i), true);
-                ImNodes::PushColorStyle(ImNodesCol_Pin, GetPinColor(node->outputs[i].type));
-                ImNodes::BeginOutputAttribute(pinId);
-
-                // Align text to right would be nice here
-                ImGui::Text("%s", node->outputs[i].name.c_str());
-
+                int pin = m_editorReg.GetPinId(e, i, true);
+                ImNodes::BeginOutputAttribute(pin);
+                ImGui::TextUnformatted(node->outputs[i].name.c_str());
                 ImNodes::EndOutputAttribute();
-                ImNodes::PopColorStyle();
             }
 
             ImNodes::EndNode();
 
-            // Update stored position from ImNodes
-            ImVec2 pos = ImNodes::GetNodeGridSpacePos(static_cast<int>(entity));
+            // Sync UI Position
+            ImVec2 pos = ImNodes::GetNodeGridSpacePos(uiNode);
             node->ui = {pos.x, pos.y};
         }
 
-        // ---------------------------------------------------------
-        // 2. DRAW LINKS
-        // ---------------------------------------------------------
-        for (auto entity : entities) {
-            auto* node = m_Registry.GetComponent<of::domain::NodeComponent>(entity);
+        // ------------------------------------------------------------
+        // Draw links
+        // ------------------------------------------------------------
+        for (auto e : nodes) {
+            auto* node = m_registry.GetComponent<domain::NodeComponent>(e);
+
             for (size_t i = 0; i < node->inputs.size(); ++i) {
-                const auto& conn = node->inputs[i].connection;
-                if (conn.targetNodeID != of::domain::INVALID_ENTITY_ID) {
-                    // Create Link ID based on the Input Pin (since 1 input can have only 1 link)
-                    int linkId = GetLinkID(entity, static_cast<int>(i));
+                auto& conn = node->inputs[i].connection;
 
-                    int startPinId = GetPinID(conn.targetNodeID, static_cast<int>(conn.targetPinIdx), true);
-                    int endPinId = GetPinID(entity, static_cast<int>(i), false);
+                if (conn.targetNodeID == of::domain::INVALID_ENTITY_ID)
+                    continue;
 
-                    ImNodes::Link(linkId, startPinId, endPinId);
-                }
+                int uiLink = m_editorReg.GetLinkId(e, i);
+
+                int uiStart = m_editorReg.GetPinId(conn.targetNodeID, conn.targetPinIdx, true);
+
+                int uiEnd = m_editorReg.GetPinId(e, i, false);
+
+                ImNodes::Link(uiLink, uiStart, uiEnd);
             }
         }
 
-        // ---------------------------------------------------------
-        // 3. CONTEXT MENU (Spawn Nodes)
-        // ---------------------------------------------------------
-        // Right click on empty space
+        // ------------------------------------------------------------
+        // Context menu for creating nodes
+        // ------------------------------------------------------------
         if (ImNodes::IsEditorHovered() && ImGui::IsMouseClicked(1)) {
-            ImGui::OpenPopup("create_node_menu");
-            // Capture mouse pos for spawning
-            m_CurrentMouseGridPosition = GetCurrentMouseGridPosition();
+            ImGui::OpenPopup("NodeCreatePopup");
+            m_spawnPos = GetMouseGridPos();
         }
 
-        if (ImGui::BeginPopup("create_node_menu")) {
-            const auto& definitions = NodeRegistry::Instance().GetDefinitions();  // Assuming you add this getter
+        if (ImGui::BeginPopup("NodeCreatePopup")) {
+            const auto& defs = engine::NodeRegistry::Instance().GetDefinitions();
 
-            // Simple flat list for now. Later: Categories.
-            for (const auto& [id, def] : definitions) {
+            for (const auto& [id, def] : defs) {
                 if (ImGui::MenuItem(def.name.c_str())) {
-                    of::domain::Entity newEntity = NodeRegistry::Instance().SpawnNode(m_Registry, id);
-
-                    // Set position
-                    ImNodes::SetNodeGridSpacePos(static_cast<int>(newEntity),
-                                                 ImVec2(m_CurrentMouseGridPosition.x, m_CurrentMouseGridPosition.y));
-
-                    // Update Component so logic knows it exists (though UI is updated next frame)
-                    auto* n = m_Registry.GetComponent<of::domain::NodeComponent>(newEntity);
-                    if (n)
-                        n->ui = m_CurrentMouseGridPosition;
+                    auto newNode = engine::NodeRegistry::Instance().SpawnNode(m_registry, id);
+                    ImNodes::SetNodeGridSpacePos(m_editorReg.GetNodeId(newNode), ImVec2(m_spawnPos.x, m_spawnPos.y));
                 }
             }
+
             ImGui::EndPopup();
         }
 
         ImNodes::EndNodeEditor();
 
-        // ---------------------------------------------------------
-        // 4. HANDLE INTERACTIONS
-        // ---------------------------------------------------------
+        // ------------------------------------------------------------
+        // Handle link creation
+        // ------------------------------------------------------------
+        int startPin, endPin;
+        if (ImNodes::IsLinkCreated(&startPin, &endPin)) {
+            auto outPin = m_editorReg.DecodePin(startPin);
+            auto inPin = m_editorReg.DecodePin(endPin);
 
-        // Connection Created
-        int startId, endId;
-        if (ImNodes::IsLinkCreated(&startId, &endId)) {
-            // Decode IDs
-            // Start is usually Output, End is Input
-            auto startPin = DecodePinID(startId);
-            auto endPin = DecodePinID(endId);
+            if (outPin.isOutput && !inPin.isOutput) {
+                auto* target = m_registry.GetComponent<domain::NodeComponent>(inPin.node);
 
-            // Sanity Check: Ensure start is Output and end is Input
-            if (startPin.isOutput && !endPin.isOutput) {
-                auto* targetNode = m_Registry.GetComponent<of::domain::NodeComponent>(endPin.nodeID);
-                if (targetNode) {
-                    // Set Connection
-                    targetNode->inputs[endPin.pinIndex].connection.targetNodeID = startPin.nodeID;
-                    targetNode->inputs[endPin.pinIndex].connection.targetPinIdx = startPin.pinIndex;
-
-                    // Mark Dirty
-                    targetNode->isDirty = true;
-                    hasChanged = true;
-                    // Important: The Evaluator needs to know, usually via a global flag or by traversing next frame
-                }
+                target->inputs[inPin.pinIndex].connection = {outPin.node, outPin.pinIndex};
+                target->isDirty = true;
+                graphChanged = true;
             }
         }
 
-        // Connection Deleted
-        int destroyedLinkId;
-        if (ImNodes::IsLinkDestroyed(&destroyedLinkId)) {
-            // Link ID was derived from the Input Pin ID
-            auto info = DecodeLinkID(destroyedLinkId);
+        // ------------------------------------------------------------
+        // Handle link deletion
+        // ------------------------------------------------------------
+        int destroyedLink;
+        if (ImNodes::IsLinkDestroyed(&destroyedLink)) {
+            auto [node, pin] = m_editorReg.DecodeLink(destroyedLink);
 
-            auto* node = m_Registry.GetComponent<of::domain::NodeComponent>(info.nodeID);
-            if (node) {
-                // Reset Connection
-                node->inputs[info.pinIndex].connection.targetNodeID = of::domain::INVALID_ENTITY_ID;
-                node->inputs[info.pinIndex].connection.targetPinIdx = 0;
-                node->isDirty = true;
-                hasChanged = true;
-            }
+            auto* comp = m_registry.GetComponent<domain::NodeComponent>(node);
+            comp->inputs[pin].connection = {};
+            comp->isDirty = true;
+            graphChanged = true;
         }
     }
-    ImGui::End();
-    return hasChanged;
-}
 
-glm::vec2 GraphEditorSystem::GetCurrentMouseGridPosition() {
-    ImVec2 mouse_pos_screen = ImGui::GetMousePos();
-    ImVec2 editor_panning = ImNodes::EditorContextGetPanning();
-    ImVec2 mouse_pos_editor_space = mouse_pos_screen - editor_panning;
-    return {mouse_pos_editor_space.x, mouse_pos_editor_space.y};
+    ImGui::End();
+    return graphChanged;
 }
 
 }  // namespace of::ui

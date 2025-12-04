@@ -1,6 +1,7 @@
 add_library(ontoflow_ui STATIC
 	src/Window.cpp
 	src/GraphEditorSystem.cpp
+	src/NodeEditorRegistry.cpp
 	${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 	${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )

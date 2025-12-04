@@ -1,35 +1,18 @@
-#include <memory>
 #include <ontoflow/core/Logger.hpp>
-#include <ontoflow/domain/Components.hpp>
-#include <ontoflow/domain/Entity.hpp>
 #include <ontoflow/domain/GeometrySystem.hpp>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/Editor.hpp>
-#include <ontoflow/occt/OCCTBackend.hpp>
 #include <ontoflow/ui/Window.hpp>
-#include <ontoflow/vis/Camera2D.hpp>
-#include <ontoflow/vis/Camera3D.hpp>
-#include <ontoflow/vis/OpenGLRenderer.hpp>
-#include <ontoflow/vis/RenderingSystem.hpp>
 
-// GLFW includes are usually handled by Window.hpp, but we need keys here
-#include <GLFW/glfw3.h>
+#include "ontoflow/occt/OCCTBackend.hpp"
 
-using namespace of::domain;
-using namespace of::occt;
+using namespace of;
 using namespace of::editor;
-using namespace of::ui;
-using namespace of::vis;
 
-constexpr int WINDOW_WIDTH = 1600;
-constexpr int WINDOW_HEIGHT = 900;
-constexpr const char* APP_NAME = "OntoFlow | Dataflow Engine";
-
-// Helper: Convert GLFW Input to OntoFlow Input Event
 static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
     using namespace of;
     KeyEvent ev{};
-    ev.pressed = true;  // simplifying for press events
+    ev.pressed = true;
     ev.ctrl = (mods & GLFW_MOD_CONTROL) != 0;
     ev.alt = (mods & GLFW_MOD_ALT) != 0;
     ev.shift = (mods & GLFW_MOD_SHIFT) != 0;
@@ -39,8 +22,6 @@ static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
             ev.code = KeyCode::Escape;
             break;
         case GLFW_KEY_ENTER:
-            ev.code = KeyCode::Enter;
-            break;
         case GLFW_KEY_KP_ENTER:
             ev.code = KeyCode::Enter;
             break;
@@ -64,68 +45,53 @@ static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
     return ev;
 }
 
-int main(int argc, char* argv[]) {
-    LOG(Info) << "Starting " << APP_NAME << "...";
+int main() {
+    // ----------------------------------------------------
+    // 1. Create Window
+    // ----------------------------------------------------
+    ui::Window window;
 
-    // ------------------------------------------------------------
-    // 1. CORE SYSTEM INITIALIZATION
-    // ------------------------------------------------------------
-    Registry registry;
-    OCCTBackend backend;  // Stateless Geometry Kernel
-    GeometrySystem geom(registry, backend);
+    ui::Window::CreateInfo ci;
+    ci.width = 1600;
+    ci.height = 1000;
+    ci.title = "OntoFlow Editor";
 
-    // ------------------------------------------------------------
-    // 2. EDITOR SETUP (The Brain)
-    // ------------------------------------------------------------
-    Editor editor(registry, geom);
-
-    // CRITICAL: Load the initial "Value -> Box" Graph
-    LOG(Info) << "Initializing Demo Graph...";
-    editor.InitializeDemoGraph();
-
-    // ------------------------------------------------------------
-    // 3. VISUALIZATION SETUP (The Eyes)
-    // ------------------------------------------------------------
-    Window window;
-    if (!window.Create({WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME})) {
-        LOG(Error) << "Failed to create window";
-        return -1;
+    if (!window.Create(ci)) {
+        LOG(Error) << "Failed to create OntoFlow window.";
+        return 1;
     }
 
-    // Renderer (OpenGL)
-    auto renderer = std::make_unique<OpenGLRenderer>();
-    RenderingSystem renderingSystem(std::move(renderer));
-    renderingSystem.Init(registry);
-    renderingSystem.SetShowAxis(true);
-    renderingSystem.SetViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    LOG(Info) << "OntoFlow Window created.";
 
-    // Cameras
-    auto cam3D = std::make_shared<Camera3D>();
-    // Position camera to look at the box (approximate)
-    // Assuming Camera3D has a sensible default or SetPosition method
+    // ----------------------------------------------------
+    // 2. OntoFlow Core Systems
+    // ----------------------------------------------------
+    domain::Registry registry;
+    occt::OCCTBackend backend;
+    domain::GeometrySystem geometrySystem(registry, backend);
 
-    editor.SetCamera3D(cam3D);
-    editor.SetViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    editor::Editor editor(registry, geometrySystem);
 
-    // ------------------------------------------------------------
-    // 4. INPUT MAPPING
-    // ------------------------------------------------------------
+    // Demo nodes
+    editor.InitializeDemoGraph();
+
+    // ----------------------------------------------------
+    // 3. Connect window input → editor input
+    // ----------------------------------------------------
     window.SetKeyPressedCallback([&](int key, int scancode, int action, int mods) {
-        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-            InputEvent ev;
-            ev.type = InputEventType::Key;
-            ev.data = MakeKeyEventFromGLFW(key, action, mods);
-            editor.OnInput(ev);
-        }
+        InputEvent ev;
+        ev.type = InputEventType::Key;
+        ev.data = MakeKeyEventFromGLFW(key, action, 0);
+        editor.OnInput(ev);
     });
 
-    window.SetMouseButtonCallback([&](int btn, int act, int mods) {
+    window.SetMouseButtonCallback([&](int button, int action, int mods) {
         double x, y;
         glfwGetCursorPos(window.GetNative(), &x, &y);
         InputEvent ev;
         ev.type = InputEventType::MouseButton;
         ev.data = MouseButtonEvent{
-            (btn == GLFW_MOUSE_BUTTON_LEFT ? MouseButton::Left : MouseButton::Right), act == GLFW_PRESS, {x, y}};
+            (button == GLFW_MOUSE_BUTTON_LEFT ? MouseButton::Left : MouseButton::Right), action == GLFW_PRESS, {x, y}};
         editor.OnInput(ev);
     });
 
@@ -149,40 +115,26 @@ int main(int argc, char* argv[]) {
 
     window.SetWindowSizeCallback([&](int w, int h) {
         editor.SetViewportSize(w, h);
-        renderingSystem.SetViewportSize(w, h);
     });
 
-    // ------------------------------------------------------------
-    // 5. MAIN LOOP
-    // ------------------------------------------------------------
-    double lastTime = glfwGetTime();
-
+    // ----------------------------------------------------
+    // 4. Main Application Loop
+    // ----------------------------------------------------
     while (window.PollEvents()) {
-        double currentTime = glfwGetTime();
-        double dt = currentTime - lastTime;
-        lastTime = currentTime;
+        // Start ImGui frame
+        window.BeginFrame();
 
-        // A. Logic Update (Graph Evaluation happens here if dirty)
-        editor.Update(dt);
+        // Draw editor UI
+        editor.DrawUI();
 
-        // B. Sync Geometry (MeshComponent updates if Graph changed)
-        renderingSystem.Update(registry);
+        // Update camera + graph
+        editor.Update(1.0 / 60.0);
 
-        // C. Render 3D Scene (Background)
-        auto* cam = editor.GetActiveCamera();
-        if (cam) {
-            renderingSystem.Render(cam);
-        }
-
-        // D. Render UI (Graph Editor on top)
-        window.BeginFrame();  // Starts ImGui Frame
-        editor.DrawUI();      // Draws ImNodes
-        window.EndFrame();    // Ends ImGui Frame & Renders DrawData
-
+        // Render
+        window.EndFrame();
         window.SwapBuffers();
     }
 
-    LOG(Info) << "Shutting down OntoFlow.";
     window.Destroy();
     return 0;
 }
