@@ -25,7 +25,7 @@ Instead of specific classes (`BoxComponent`, `SinusComponent`), we use a single 
 
 ```cpp
 struct NodeComponent {
-    std::string definitionID;   // Key to the NodeRegistry (e.g., "GEO_BOX", "MATH_ADD")
+    std::string definitionID;   // Key to the NodeRegistry (e.g., "GEOM_BOX", "MATH_ADD")
     std::vector<Pin> inputs;    // Input slots (Data receivers)
     std::vector<Pin> outputs;   // Output slots (Data providers)
     bool isDirty;               // Re-evaluation flag
@@ -71,7 +71,7 @@ The `NodeRegistry` is a singleton factory containing `NodeDefinition` blueprints
 
 Example for a Box Node:
 
-> **DefinitionID:** "GEO_BOX"
+> **DefinitionID:** "GEOM_BOX"
 > **Inputs:** Width, Height, Depth
 > **Logic:** `Shape = OCCT::MakeBox(In[0], In[1], In[2])`
 

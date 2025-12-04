@@ -218,13 +218,13 @@ void Editor::InitializeDemoGraph() {
             node.outputs[0].value = GeometryHandle{bodyEnt};
         }
     };
-    nodeReg.RegisterNode("GEO_BOX", boxDef);
+    nodeReg.RegisterNode("GEOM_BOX", boxDef);
 
     // Spawn Graph
     m_WidthNodeID = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
     Entity nLength = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
     Entity nHeight = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
-    m_BoxNodeID = nodeReg.SpawnNode(reg, "GEO_BOX");
+    m_BoxNodeID = nodeReg.SpawnNode(reg, "GEOM_BOX");
 
     // Init Values
     reg.GetComponent<NodeComponent>(m_WidthNodeID)->outputs[0].value = 2.0;
