@@ -3,57 +3,13 @@
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/engine/GraphEvaluator.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
+#include <ontoflow/nodes/StandardLibrary.hpp>
 #include <ontoflow/occt/OCCTBackend.hpp>
 #include <variant>
 
 using namespace of::domain;
 using namespace of::engine;
 using namespace of::occt;
-
-// --- Node Definitions (In a real app, these would be in a library) ---
-void RegisterNodes(OCCTBackend& backend) {
-    auto& reg = NodeRegistry::Instance();
-
-    // 1. Value Node (Float)
-    NodeDefinition valDef;
-    valDef.name = "Value (Float)";
-    valDef.outputs.push_back(Pin{"Out", PinType::FLOAT});
-    valDef.compute = [](NodeComponent&, Registry&) { /* Static */ };
-    reg.RegisterNode("VALUE_FLOAT", valDef);
-
-    // 2. Box Node (Geometry)
-    NodeDefinition boxDef;
-    boxDef.name = "Box";
-    boxDef.inputs.push_back(Pin{"Width", PinType::FLOAT});
-    boxDef.inputs.push_back(Pin{"Length", PinType::FLOAT});
-    boxDef.inputs.push_back(Pin{"Height", PinType::FLOAT});
-    boxDef.outputs.push_back(Pin{"Shape", PinType::GEOMETRY});
-
-    // Capture backend by reference. Ensure backend outlives the registry/lambda usage.
-    boxDef.compute = [&backend](NodeComponent& node, Registry& r) {
-        double w = 10.0, l = 10.0, h = 10.0;
-
-        // Safely get inputs or defaults
-        if (std::holds_alternative<double>(node.inputs[0].value))
-            w = std::get<double>(node.inputs[0].value);
-        if (std::holds_alternative<double>(node.inputs[1].value))
-            l = std::get<double>(node.inputs[1].value);
-        if (std::holds_alternative<double>(node.inputs[2].value))
-            h = std::get<double>(node.inputs[2].value);
-
-        // Create Geometry using the shared backend
-        auto handle = backend.CreateBox(w, l, h);
-
-        // Store in BodyComponent of a NEW entity
-        Entity bodyEnt = r.CreateEntity();
-        r.AddComponent<BodyComponent>(bodyEnt, BodyComponent{handle});
-        r.AddComponent<NameComponent>(bodyEnt, NameComponent{"Box_Body"});
-
-        node.outputs[0].value = GeometryHandle{bodyEnt};
-        LOG(Info) << "Box Node Computed. Created Body Entity: " << bodyEnt << " with Handle: " << handle;
-    };
-    reg.RegisterNode("GEO_BOX", boxDef);
-}
 
 int main() {
     LOG(Info) << "================================";
@@ -65,13 +21,13 @@ int main() {
 
     OCCTBackend backend;
 
-    RegisterNodes(backend);
+    of::nodes::StandardLibrary::RegisterAll(backend);
 
     // 1. Spawn Nodes
-    Entity nWidth = NodeRegistry::Instance().SpawnNode(registry, "VALUE_FLOAT");
-    Entity nLength = NodeRegistry::Instance().SpawnNode(registry, "VALUE_FLOAT");
-    Entity nHeight = NodeRegistry::Instance().SpawnNode(registry, "VALUE_FLOAT");
-    Entity nBox = NodeRegistry::Instance().SpawnNode(registry, "GEO_BOX");
+    Entity nWidth = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity nLength = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity nHeight = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity nBox = NodeRegistry::Instance().SpawnNode(registry, "GEOM_BOX");
 
     // 2. Set Values
     registry.GetComponent<NodeComponent>(nWidth)->outputs[0].value = 50.0;

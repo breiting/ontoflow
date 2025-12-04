@@ -7,3 +7,5 @@ add_subdirectory(lua)
 add_subdirectory(editor)
 add_subdirectory(ui)
 add_subdirectory(render)
+add_subdirectory(nodes)
+

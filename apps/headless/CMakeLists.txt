@@ -10,4 +10,5 @@ PRIVATE
 	ontoflow_engine
 	ontoflow_occt
 	ontoflow_command
+	ontoflow_nodes
 )
