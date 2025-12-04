@@ -1,24 +1,19 @@
-#include <CLI/CLI.hpp>
 #include <memory>
 #include <ontoflow/core/Logger.hpp>
 #include <ontoflow/domain/Components.hpp>
 #include <ontoflow/domain/Entity.hpp>
 #include <ontoflow/domain/GeometrySystem.hpp>
-#include <ontoflow/domain/IGeometryBackend.hpp>
-#include <ontoflow/domain/Query.hpp>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/Editor.hpp>
 #include <ontoflow/occt/OCCTBackend.hpp>
-#include <ontoflow/occt/STEPImporter.hpp>
 #include <ontoflow/ui/Window.hpp>
 #include <ontoflow/vis/Camera2D.hpp>
 #include <ontoflow/vis/Camera3D.hpp>
-#include <ontoflow/vis/Mesh.hpp>
 #include <ontoflow/vis/OpenGLRenderer.hpp>
 #include <ontoflow/vis/RenderingSystem.hpp>
-#include <ontoflow/vis/StlReader.hpp>
 
-#include "CLI/CLI.hpp"
+// GLFW includes are usually handled by Window.hpp, but we need keys here
+#include <GLFW/glfw3.h>
 
 using namespace of::domain;
 using namespace of::occt;
@@ -26,14 +21,15 @@ using namespace of::editor;
 using namespace of::ui;
 using namespace of::vis;
 
-constexpr int WINDOW_WIDTH = 1280;
-constexpr int WINDOW_HEIGHT = 800;
-constexpr const char* APP_NAME = "ontoflow";
+constexpr int WINDOW_WIDTH = 1600;
+constexpr int WINDOW_HEIGHT = 900;
+constexpr const char* APP_NAME = "OntoFlow | Dataflow Engine";
 
+// Helper: Convert GLFW Input to OntoFlow Input Event
 static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
     using namespace of;
     KeyEvent ev{};
-    ev.pressed = true;
+    ev.pressed = true;  // simplifying for press events
     ev.ctrl = (mods & GLFW_MOD_CONTROL) != 0;
     ev.alt = (mods & GLFW_MOD_ALT) != 0;
     ev.shift = (mods & GLFW_MOD_SHIFT) != 0;
@@ -43,6 +39,8 @@ static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
             ev.code = KeyCode::Escape;
             break;
         case GLFW_KEY_ENTER:
+            ev.code = KeyCode::Enter;
+            break;
         case GLFW_KEY_KP_ENTER:
             ev.code = KeyCode::Enter;
             break;
@@ -66,102 +64,62 @@ static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
     return ev;
 }
 
-Entity LoadSTLtoECS(const std::string& file, Registry& ecs) {
-    of::domain::Mesh mesh;
-    StlReader reader;
-
-    if (!reader.LoadFromFile(file, mesh)) {
-        LOG(Error) << "Failed to load STL: " << file << "\n";
-        return INVALID_ENTITY;
-    }
-
-    Entity e = ecs.CreateEntity();
-    ecs.AddComponent<MeshComponent>(e, MeshComponent{mesh});
-    ecs.AddComponent<NameComponent>(e, NameComponent{"ImportedSTL"});
-    LOG(Info) << "Successfully added entity: " << e;
-
-    return e;
-}
-
-/*
-Entity CreateTestFace5(Registry& ecs) {
-    // LEGACY FUNCTION REMOVED
-    return INVALID_ENTITY;
-}
-*/
-
 int main(int argc, char* argv[]) {
-    CLI::App app{"Desc"};
-    std::string stlFile;
-    app.add_option("--stl", stlFile, "Load STL model");
-    std::string stepFile;
-    app.add_option("--step", stepFile, "Load STEP model");
-    bool loadCube = false;
-    app.add_flag("--cube", loadCube, "Load unit cube");
-    bool loadFace = false;
-    app.add_flag("--face", loadFace, "Load test face");
+    LOG(Info) << "Starting " << APP_NAME << "...";
 
-    CLI11_PARSE(app, argc, argv);
-
-    LOG(Info) << "================================";
-    LOG(Info) << APP_NAME;
-    LOG(Info) << "================================";
-
-    // ECS + Backend
-
+    // ------------------------------------------------------------
+    // 1. CORE SYSTEM INITIALIZATION
+    // ------------------------------------------------------------
     Registry registry;
-    OCCTBackend backend;
+    OCCTBackend backend;  // Stateless Geometry Kernel
     GeometrySystem geom(registry, backend);
 
-    if (!stlFile.empty()) {
-        Entity stl = LoadSTLtoECS(stlFile, registry);
-        if (stl == INVALID_ENTITY) {
-            LOG(Error) << "Error loading STL file";
-            return -1;
-        }
-    }
-
-    if (!stepFile.empty()) {
-        STEPImporter step;
-        Entity mesh = step.Load(stepFile, registry);
-        if (mesh == INVALID_ENTITY) {
-            LOG(Error) << "Error loading STEP file";
-            return -1;
-        }
-    }
-
+    // ------------------------------------------------------------
+    // 2. EDITOR SETUP (The Brain)
+    // ------------------------------------------------------------
     Editor editor(registry, geom);
 
-    // Initialize Demo Graph
+    // CRITICAL: Load the initial "Value -> Box" Graph
+    LOG(Info) << "Initializing Demo Graph...";
     editor.InitializeDemoGraph();
 
-    // Window
+    // ------------------------------------------------------------
+    // 3. VISUALIZATION SETUP (The Eyes)
+    // ------------------------------------------------------------
     Window window;
-    if (!window.Create({WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME}))
+    if (!window.Create({WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME})) {
+        LOG(Error) << "Failed to create window";
         return -1;
+    }
 
-    // RenderingSystem (after Window initialization)
+    // Renderer (OpenGL)
     auto renderer = std::make_unique<OpenGLRenderer>();
     RenderingSystem renderingSystem(std::move(renderer));
     renderingSystem.Init(registry);
     renderingSystem.SetShowAxis(true);
+    renderingSystem.SetViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    auto cam2D = std::make_shared<Camera2D>();
+    // Cameras
     auto cam3D = std::make_shared<Camera3D>();
-    editor.SetCamera2D(cam2D);
-    editor.SetCamera3D(cam3D);
-    editor.SetViewportSize(window.GetWidth(), window.GetHeight());
+    // Position camera to look at the box (approximate)
+    // Assuming Camera3D has a sensible default or SetPosition method
 
-    // INPUT MAPPING
-    window.SetKeyPressedCallback([&](int key, int /*scancode*/, int action, int /*mods*/) {
-        LOG(Info) << "GLFW Key Pressed Callback: Key=" << key << ", Action=" << action;
-        InputEvent ev;
-        ev.type = InputEventType::Key;
-        ev.data = MakeKeyEventFromGLFW(key, action, 0);
-        editor.OnInput(ev);
+    editor.SetCamera3D(cam3D);
+    editor.SetViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    // ------------------------------------------------------------
+    // 4. INPUT MAPPING
+    // ------------------------------------------------------------
+    window.SetKeyPressedCallback([&](int key, int scancode, int action, int mods) {
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            InputEvent ev;
+            ev.type = InputEventType::Key;
+            ev.data = MakeKeyEventFromGLFW(key, action, mods);
+            editor.OnInput(ev);
+        }
     });
 
-    window.SetMouseButtonCallback([&](int btn, int act, int /*mods*/) {
+    window.SetMouseButtonCallback([&](int btn, int act, int mods) {
         double x, y;
         glfwGetCursorPos(window.GetNative(), &x, &y);
         InputEvent ev;
@@ -194,29 +152,37 @@ int main(int argc, char* argv[]) {
         renderingSystem.SetViewportSize(w, h);
     });
 
-    auto lt = static_cast<float>(glfwGetTime());
-    while (window.PollEvents()) {
-        float ct = static_cast<float>(glfwGetTime());
-        float dt = ct - lt;
-        lt = ct;
+    // ------------------------------------------------------------
+    // 5. MAIN LOOP
+    // ------------------------------------------------------------
+    double lastTime = glfwGetTime();
 
-        // UPDATE
+    while (window.PollEvents()) {
+        double currentTime = glfwGetTime();
+        double dt = currentTime - lastTime;
+        lastTime = currentTime;
+
+        // A. Logic Update (Graph Evaluation happens here if dirty)
         editor.Update(dt);
+
+        // B. Sync Geometry (MeshComponent updates if Graph changed)
         renderingSystem.Update(registry);
 
-        // RENDER
+        // C. Render 3D Scene (Background)
         auto* cam = editor.GetActiveCamera();
-        assert(cam);
-        renderingSystem.Render(cam);
+        if (cam) {
+            renderingSystem.Render(cam);
+        }
 
-        // UI RENDER
-        window.BeginFrame();
-        editor.DrawUI();
-        window.EndFrame();
+        // D. Render UI (Graph Editor on top)
+        window.BeginFrame();  // Starts ImGui Frame
+        editor.DrawUI();      // Draws ImNodes
+        window.EndFrame();    // Ends ImGui Frame & Renders DrawData
 
         window.SwapBuffers();
     }
 
+    LOG(Info) << "Shutting down OntoFlow.";
     window.Destroy();
     return 0;
 }

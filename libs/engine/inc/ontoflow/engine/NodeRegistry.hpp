@@ -53,6 +53,10 @@ class NodeRegistry {
      */
     const NodeDefinition* GetDefinition(const std::string& opID) const;
 
+    const std::unordered_map<std::string, NodeDefinition>& GetDefinitions() const {
+        return m_Definitions;
+    }
+
    private:
     NodeRegistry() = default;
     std::unordered_map<std::string, NodeDefinition> m_Definitions;

@@ -101,12 +101,6 @@ class Editor {
      * \param key The KeyEvent to process.
      */
     void HandleKey(const KeyEvent& key);
-
-    /**
-     * \brief Processes the current content of the command buffer.
-     * Triggers mode switches based on recognized commands.
-     */
-    void ProcessCommandBuffer();
 };
 
 }  // namespace of::editor

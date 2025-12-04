@@ -163,8 +163,6 @@ void Editor::HandleKey(const KeyEvent& key) {
     if (m_CommandBuffer.size() > 2)
         m_CommandBuffer.erase(0,
                               m_CommandBuffer.size() - 2);  // Erase from beginning, keeping only the last 2 characters
-
-    ProcessCommandBuffer();
 }
 
 void Editor::InitializeDemoGraph() {

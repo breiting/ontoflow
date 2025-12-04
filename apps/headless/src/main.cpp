@@ -18,7 +18,6 @@ int main() {
 
     Registry registry;
     GraphEvaluator evaluator(registry);
-
     OCCTBackend backend;
 
     of::nodes::StandardLibrary::RegisterAll(backend);

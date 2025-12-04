@@ -158,7 +158,7 @@ embed_text_to_header("${SHADER_SRC_DIR}/unlit.frag" "${GEN_INC_DIR}/assets/unlit
 
 add_subdirectory(libs)
 add_subdirectory(apps/headless)
-# add_subdirectory(apps/ontoflow)
+add_subdirectory(apps/ontoflow)
 
 enable_testing()
 add_subdirectory(tests)

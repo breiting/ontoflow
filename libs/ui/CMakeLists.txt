@@ -22,6 +22,7 @@ PUBLIC
 	ontoflow_core
 	ontoflow_domain
 	ontoflow_command
+	ontoflow_engine
 	imgui
 	imnodes
 )
