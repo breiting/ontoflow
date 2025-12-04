@@ -37,7 +37,9 @@ Editor::~Editor() {
 
 void Editor::DrawUI() {
     if (m_GraphEditorSystem) {
-        m_GraphEditorSystem->DrawPanel();
+        if (m_GraphEditorSystem->DrawPanel()) {
+            m_NeedsEvaluation = true;
+        }
     }
 }
 
@@ -185,9 +187,9 @@ void Editor::InitializeDemoGraph() {
     // 2. Box Node (Smart Reuse)
     NodeDefinition boxDef;
     boxDef.name = "Box";
-    boxDef.inputs.push_back(Pin{"Width", PinType::FLOAT, 0.0f, {}});
-    boxDef.inputs.push_back(Pin{"Length", PinType::FLOAT, 0.0f, {}});
-    boxDef.inputs.push_back(Pin{"Height", PinType::FLOAT, 0.0f, {}});
+    boxDef.inputs.push_back(Pin{"Width", PinType::FLOAT, 1.0f, {}});
+    boxDef.inputs.push_back(Pin{"Length", PinType::FLOAT, 1.0f, {}});
+    boxDef.inputs.push_back(Pin{"Height", PinType::FLOAT, 1.0f, {}});
     boxDef.outputs.push_back(Pin{"Shape", PinType::GEOMETRY, 0.0f, {}});
 
     boxDef.compute = [&backend](NodeComponent& node, Registry& r) {
@@ -235,7 +237,7 @@ void Editor::InitializeDemoGraph() {
     auto* boxNode = reg.GetComponent<NodeComponent>(m_BoxNodeID);
     boxNode->inputs[0].connection = {m_WidthNodeID, 0};
     boxNode->inputs[1].connection = {nLength, 0};
-    boxNode->inputs[2].connection = {nHeight, 0};
+    // boxNode->inputs[2].connection = {nHeight, 0};
 
     // Initial Eval
     m_NeedsEvaluation = true;

@@ -1,9 +1,7 @@
 #pragma once
 
 #include <glm/vec2.hpp>
-
-#include "ontoflow/command/CommandStack.hpp"
-#include "ontoflow/domain/Registry.hpp"
+#include <ontoflow/domain/Registry.hpp>
 
 // Forward declaration for ImGui context and ImNodes
 namespace ImNodes {
@@ -31,7 +29,7 @@ class GraphEditorSystem final {
      * \brief Draws the main graph editor panel.
      * Should be called inside an ImGui frame.
      */
-    void DrawPanel();
+    bool DrawPanel();
 
     /**
      * \brief Toggles the visibility of the graph editor window.

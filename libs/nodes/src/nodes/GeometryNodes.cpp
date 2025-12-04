@@ -15,7 +15,8 @@ void RegisterGeometryNodes(of::domain::IGeometryBackend& backend) {
     NodeDefinition boxDef;
     boxDef.name = "Box Generator";
     boxDef.category = "Geometry";
-    boxDef.inputs = {{"Width", PinType::FLOAT}, {"Length", PinType::FLOAT}, {"Height", PinType::FLOAT}};
+    boxDef.inputs = {
+        {"Width", PinType::FLOAT, 1.0f}, {"Length", PinType::FLOAT, 1.0f}, {"Height", PinType::FLOAT, 1.0f}};
     boxDef.outputs = {{"Shape", PinType::GEOMETRY}};
 
     // Capture backend by reference

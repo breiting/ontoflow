@@ -75,9 +75,11 @@ int GetPinColor(of::domain::PinType type) {
     }
 }
 
-void GraphEditorSystem::DrawPanel() {
+bool GraphEditorSystem::DrawPanel() {
     if (!m_IsVisible)
-        return;
+        return false;
+
+    bool hasChanged = false;
 
     if (ImGui::Begin("OntoFlow Graph Editor", &m_IsVisible)) {
         ImNodes::BeginNodeEditor();
@@ -97,7 +99,8 @@ void GraphEditorSystem::DrawPanel() {
             // or use ImNodes::SetNodeGridSpacePos only when loading a file.
             // For now, let's trust ImNodes as the source of truth for UI position after init.
             if (node->ui.x == 0.0f && node->ui.y == 0.0f) {
-                ImNodes::SetNodeGridSpacePos(static_cast<int>(entity), ImVec2(100.0f * (float)entity, 100.0f));
+                ImNodes::SetNodeGridSpacePos(static_cast<int>(entity),
+                                             ImVec2(100.0f * (float)entity, 100.0f * (float)entity));
                 // Mark as initialized so we don't reset it
                 node->ui.x = -1.0f;
             }
@@ -233,6 +236,7 @@ void GraphEditorSystem::DrawPanel() {
 
                     // Mark Dirty
                     targetNode->isDirty = true;
+                    hasChanged = true;
                     // Important: The Evaluator needs to know, usually via a global flag or by traversing next frame
                 }
             }
@@ -250,10 +254,12 @@ void GraphEditorSystem::DrawPanel() {
                 node->inputs[info.pinIndex].connection.targetNodeID = of::domain::INVALID_ENTITY_ID;
                 node->inputs[info.pinIndex].connection.targetPinIdx = 0;
                 node->isDirty = true;
+                hasChanged = true;
             }
         }
     }
     ImGui::End();
+    return hasChanged;
 }
 
 glm::vec2 GraphEditorSystem::GetCurrentMouseGridPosition() {
