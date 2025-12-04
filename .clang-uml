@@ -1,0 +1,41 @@
+compilation_database_dir: build
+output_directory: docs
+diagrams:
+  class_diagram:
+    type: class
+    using_namespace: nc
+    generate_packages: true
+    glob:
+      include:
+        - libs/**/src/*.cpp
+      exclude:
+        - extern/**/*
+    exclude:
+      access:
+        - public
+        - private
+        - protected
+      namespaces:
+        - glm
+        - std
+        - NCollection_MapAlgo
+        - opencascade
+        - __cxxabiv1
+        - IMeshData
+  package_diagram:
+    type: package
+    using_namespace: nc
+    glob:
+      include:
+        - libs/**/src/*.cpp
+      exclude:
+        - extern/**/*
+    exclude:
+      namespaces:
+        - glm
+        - std
+        - sol
+        - NCollection_MapAlgo
+        - opencascade
+        - __cxxabiv1
+        - IMeshData

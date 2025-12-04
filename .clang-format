@@ -1,0 +1,11 @@
+# LLVM, Google, Chromium, Mozilla, WebKit, Microsoft, GNU
+BasedOnStyle: Google
+---
+Language: Cpp
+IndentWidth: 4
+ColumnLimit: 120
+AllowShortLambdasOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
