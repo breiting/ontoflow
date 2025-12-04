@@ -9,7 +9,7 @@
 
 #include "GlyphAtlas.hpp"
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Renders 2D text using a batched approach and a glyph atlas.
@@ -113,4 +113,4 @@ class TextRenderer2D {
     float m_StartX = 0.0f;  ///< Starting X position for multiline text.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

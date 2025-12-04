@@ -1,11 +1,11 @@
-#include <ontoflow/vis/AxisRenderer.hpp>
-#include <ontoflow/vis/Shader.hpp>
+#include <ontoflow/render/AxisRenderer.hpp>
+#include <ontoflow/render/Shader.hpp>
 #include <vector>
 
 #include "assets/unlit_frag.h"
 #include "assets/unlit_vert.h"
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Destructor. Calls Shutdown() to release OpenGL resources.
@@ -126,4 +126,4 @@ void AxisRenderer::Render(const glm::mat4& model, const glm::mat4& view, const g
     glDrawArrays(GL_LINES, 0, m_VertexCount);
 }
 
-}  // namespace of::vis
+}  // namespace of::render

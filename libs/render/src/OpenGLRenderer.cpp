@@ -4,10 +4,10 @@
 #include <memory>
 #include <ontoflow/core/Colors.hpp>
 #include <ontoflow/core/Logger.hpp>
-#include <ontoflow/vis/BaseGeometry.hpp>
-#include <ontoflow/vis/OpenGLRenderer.hpp>
+#include <ontoflow/render/BaseGeometry.hpp>
+#include <ontoflow/render/OpenGLRenderer.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 OpenGLRenderer::OpenGLRenderer() : m_Wireframe(false) {
     glEnable(GL_DEPTH_TEST);
@@ -65,4 +65,4 @@ void OpenGLRenderer::DrawPoints(const std::shared_ptr<BaseGeometry> points, std:
 void OpenGLRenderer::EndFrame() {
 }
 
-}  // namespace of::vis
+}  // namespace of::render

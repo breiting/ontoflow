@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Represents an OpenGL shader program.
@@ -99,4 +99,4 @@ class Shader {
      */
     void compileShader(const std::string& vertexCode, const std::string& fragmentCode);
 };
-}  // namespace of::vis
+}  // namespace of::render

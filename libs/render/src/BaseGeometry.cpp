@@ -1,11 +1,11 @@
 // clang-format off
 #include <glad.h>
 // clang-format on
-#include <ontoflow/vis/BaseGeometry.hpp>
+#include <ontoflow/render/BaseGeometry.hpp>
 
 using namespace of::domain;
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Constructs a BaseGeometry object.
@@ -49,4 +49,4 @@ size_t BaseGeometry::VertexCount() const {
 const std::vector<Vertex>& BaseGeometry::GetVertices() const {
     return m_Vertices;
 }
-}  // namespace of::vis
+}  // namespace of::render

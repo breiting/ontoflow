@@ -1,7 +1,7 @@
 #include <algorithm>
-#include <ontoflow/vis/Camera2D.hpp>
+#include <ontoflow/render/Camera2D.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Constructs a default 2D camera.
@@ -105,4 +105,4 @@ glm::vec3 Camera2D::ScreenToWorld(double x, double y) const {
     return worldPos;
 }
 
-}  // namespace of::vis
+}  // namespace of::render

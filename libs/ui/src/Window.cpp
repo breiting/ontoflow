@@ -2,9 +2,9 @@
 #include <ontoflow/ui/Window.hpp>
 
 #include "GLFW/glfw3.h"
-#include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "imgui.h"
 
 // Global texture for preventing shader warnings when no texture is bound
 static GLuint g_DefaultTexture = 0;
@@ -41,7 +41,7 @@ namespace of::ui {
 
 /**
  * rief Creates and initializes a GLFW window and its OpenGL context.
- * 
+ *
  * \param ci Configuration information for the window.
  * \return True if the window was created successfully, false otherwise.
  */
@@ -81,18 +81,18 @@ bool Window::Create(const CreateInfo& ci) {
     // ImGui Setup
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;    // Enable Multi-Viewport / Platform Windows
 
     ImGui::StyleColorsDark();
 
-    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular
+    // ones.
     ImGuiStyle& style = ImGui::GetStyle();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
@@ -119,7 +119,7 @@ void Window::Destroy() {
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    DestroyDefaultTexture(); // Clean up the global default texture
+    DestroyDefaultTexture();  // Clean up the global default texture
     if (m_Window) {
         glfwDestroyWindow(m_Window);
         m_Window = nullptr;
@@ -139,8 +139,7 @@ void Window::EndFrame() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         GLFWwindow* backup_current_context = glfwGetCurrentContext();
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
@@ -187,42 +186,42 @@ void Window::InitCallbacks() {
 
     // Key event callback
     glfwSetKeyCallback(m_Window, [](GLFWwindow* w, int key, int scancode, int action, int mods) {
-        ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods); // Pass to ImGui first
+        ImGui_ImplGlfw_KeyCallback(w, key, scancode, action, mods);  // Pass to ImGui first
         ImGuiIO& io = ImGui::GetIO();
-        if (io.WantCaptureKeyboard) { // If ImGui consumed the keyboard event, don't pass it further
+        if (io.WantCaptureKeyboard) {  // If ImGui consumed the keyboard event, don't pass it further
             return;
         }
 
         auto* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
-        if (!self || !self->m_KeyPressedCallback) // Check if callback is set
+        if (!self || !self->m_KeyPressedCallback)  // Check if callback is set
             return;
-        self->m_KeyPressedCallback(key, scancode, action, mods); // Pass all GLFW key data
+        self->m_KeyPressedCallback(key, scancode, action, mods);  // Pass all GLFW key data
     });
 
     // Mouse button event callback
     glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* w, int button, int action, int mods) {
-        ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods); // Pass to ImGui first
+        ImGui_ImplGlfw_MouseButtonCallback(w, button, action, mods);  // Pass to ImGui first
         ImGuiIO& io = ImGui::GetIO();
-        if (io.WantCaptureMouse) { // If ImGui consumed the mouse event, don't pass it further
+        if (io.WantCaptureMouse) {  // If ImGui consumed the mouse event, don't pass it further
             return;
         }
 
         auto* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
-        if (!self || !self->m_MouseButtonCallback) // Check if callback is set
+        if (!self || !self->m_MouseButtonCallback)  // Check if callback is set
             return;
         self->m_MouseButtonCallback(button, action, mods);
     });
 
     // Scroll event callback
     glfwSetScrollCallback(m_Window, [](GLFWwindow* w, double xoff, double yoff) {
-        ImGui_ImplGlfw_ScrollCallback(w, xoff, yoff); // Pass to ImGui first
+        ImGui_ImplGlfw_ScrollCallback(w, xoff, yoff);  // Pass to ImGui first
         ImGuiIO& io = ImGui::GetIO();
-        if (io.WantCaptureMouse) { // If ImGui consumed the mouse event, don't pass it further
+        if (io.WantCaptureMouse) {  // If ImGui consumed the mouse event, don't pass it further
             return;
         }
 
         auto* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
-        if (!self || !self->m_ScrollCallback) // Check if callback is set
+        if (!self || !self->m_ScrollCallback)  // Check if callback is set
             return;
         self->m_ScrollCallback(xoff, yoff);
     });
@@ -230,7 +229,7 @@ void Window::InitCallbacks() {
     // Cursor position callback
     glfwSetCursorPosCallback(m_Window, [](GLFWwindow* w, double x, double y) {
         auto* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
-        if (!self || !self->m_MouseMoveCallback) // Check if callback is set
+        if (!self || !self->m_MouseMoveCallback)  // Check if callback is set
             return;
         self->m_MouseMoveCallback(x, y);
     });
@@ -240,10 +239,10 @@ void Window::InitCallbacks() {
         auto* self = static_cast<Window*>(glfwGetWindowUserPointer(w));
         if (!self)
             return;
-        self->m_FramebufferWidth = width; // Update internal dimensions
+        self->m_FramebufferWidth = width;  // Update internal dimensions
         self->m_FramebufferHeight = height;
-        glViewport(0, 0, width, height); // Update OpenGL viewport
-        if (self->m_WindowSizeCallback) { // Call user-defined callback if set
+        glViewport(0, 0, width, height);   // Update OpenGL viewport
+        if (self->m_WindowSizeCallback) {  // Call user-defined callback if set
             self->m_WindowSizeCallback(width, height);
         }
     });
@@ -254,7 +253,8 @@ void Window::InitCallbacks() {
  * \return The width divided by the height.
  */
 float Window::Aspect() const {
-    if (m_FramebufferHeight == 0) return 1.0f; // Prevent division by zero
+    if (m_FramebufferHeight == 0)
+        return 1.0f;  // Prevent division by zero
     return static_cast<float>(m_FramebufferWidth) / static_cast<float>(m_FramebufferHeight);
 }
 

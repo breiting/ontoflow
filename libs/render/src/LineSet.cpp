@@ -2,11 +2,11 @@
 #include <glad.h>
 // clang-format on
 #include <glm/gtc/constants.hpp>
-#include <ontoflow/vis/LineSet.hpp>
+#include <ontoflow/render/LineSet.hpp>
 
 using namespace of::domain;
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Constructs an empty LineSet object.
@@ -76,4 +76,4 @@ void LineSet::deleteBuffers() {
         m_Vbo = 0; // Reset to 0 after deletion
     }
 }
-}  // namespace of::vis
+}  // namespace of::render

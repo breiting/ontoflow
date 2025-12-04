@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <ontoflow/editor/ICamera.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Implements a 3D orbital camera for scene navigation.
@@ -145,4 +145,4 @@ class Camera3D : public editor::ICamera {
     float m_AspectRatio{1.0f}; ///< Aspect ratio of the viewport.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

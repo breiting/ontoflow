@@ -1,10 +1,10 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <ontoflow/vis/BaseGeometry.hpp>
+#include <ontoflow/render/BaseGeometry.hpp>
 #include <vector>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Represents a renderable 3D mesh composed of vertices and indexed triangles.
@@ -83,4 +83,4 @@ class Mesh : public BaseGeometry {
     unsigned int m_Vao, m_Vbo, m_Ebo; ///< OpenGL Vertex Array, Vertex Buffer, and Element Buffer Object IDs.
     std::vector<unsigned int> m_Indices; ///< Local storage for vertex indices.
 };
-}  // namespace of::vis
+}  // namespace of::render

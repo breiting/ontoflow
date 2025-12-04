@@ -1,39 +1,39 @@
 #pragma once
-#include <glm/glm.hpp>
-#include <ontoflow/vis/BaseGeometry.hpp>
 
-namespace of::vis {
+#include <glm/glm.hpp>
+#include <ontoflow/render/BaseGeometry.hpp>
+
+namespace of::render {
 
 /**
- * \brief Represents a renderable set of points.
+ * \brief Represents a renderable set of lines.
  *
  * This class inherits from `BaseGeometry` to manage vertex data and
  * specifically handles OpenGL Vertex Array Objects (VAO) and Vertex Buffer Objects (VBO)
- * for rendering points, typically using instancing for point sprites.
+ * for rendering lines.
  */
-class PointSet : public BaseGeometry {
+class LineSet : public BaseGeometry {
    public:
     /**
-     * \brief Constructs an empty PointSet object.
+     * \brief Constructs an empty LineSet object.
      * Initializes OpenGL buffer IDs to zero.
      */
-    PointSet();
+    LineSet();
 
     /**
      * \brief Destructor. Deletes the associated OpenGL VAO and VBO.
      */
-    ~PointSet() override;
+    ~LineSet() override;
 
     /**
-     * \brief Uploads the point set's vertex data to the GPU.
-     * This method creates/updates VAO and VBOs.
+     * \brief Uploads the line set's vertex data to the GPU.
+     * This method creates/updates VAO and VBOs if the line set is dirty.
      */
     void Upload() override;
 
     /**
-     * \brief Renders the point set.
+     * \brief Renders the line set.
      * Assumes the appropriate shader is bound and uniforms are set.
-     * Uses instanced rendering.
      */
     void Render() const override;
 
@@ -44,7 +44,6 @@ class PointSet : public BaseGeometry {
     void deleteBuffers();
 
    private:
-    unsigned int m_Vao = 0; ///< OpenGL Vertex Array Object ID.
-    unsigned int m_Vbo = 0; ///< OpenGL Vertex Buffer Object ID.
+    unsigned int m_Vao, m_Vbo; ///< OpenGL Vertex Array and Vertex Buffer Object IDs.
 };
-}  // namespace of::vis
+}  // namespace of::render

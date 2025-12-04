@@ -2,12 +2,12 @@
 #include <glm/ext/matrix_clip_space.hpp>  // glm::perspective
 #include <glm/ext/matrix_transform.hpp>   // glm::lookat
 #include <glm/glm.hpp>
-#include <ontoflow/vis/Camera3D.hpp>
+#include <ontoflow/render/Camera3D.hpp>
 
 // Z = UP
 constexpr glm::vec3 UP_VECTOR = glm::vec3(0.f, 0.f, 1.f);
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Constructs a 3D camera.
@@ -223,4 +223,4 @@ glm::vec3 Camera3D::ScreenToWorld(double x, double y) const {
     return rayOrigin + t * rayDir;
 }
 
-}  // namespace of::vis
+}  // namespace of::render

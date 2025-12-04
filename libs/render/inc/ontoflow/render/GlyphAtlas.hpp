@@ -7,7 +7,7 @@
 
 #include "FontLoaderSTB.hpp"
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Manages an OpenGL texture atlas containing rendered glyphs.
@@ -74,4 +74,4 @@ class GlyphAtlas {
     float m_Ascent{0.0}; ///< Font ascent metric.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

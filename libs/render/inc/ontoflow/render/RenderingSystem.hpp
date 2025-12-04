@@ -3,15 +3,15 @@
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/ICamera.hpp>
 #include <ontoflow/editor/ViewController.hpp> // Not directly used in this header, but might be part of the concept
-#include <ontoflow/vis/AxisRenderer.hpp>
-#include <ontoflow/vis/DirectionalLight.hpp>
-#include <ontoflow/vis/IRenderer.hpp>
-#include <ontoflow/vis/LineSet.hpp>
-#include <ontoflow/vis/Mesh.hpp>
-#include <ontoflow/vis/PointSet.hpp>
+#include <ontoflow/render/AxisRenderer.hpp>
+#include <ontoflow/render/DirectionalLight.hpp>
+#include <ontoflow/render/IRenderer.hpp>
+#include <ontoflow/render/LineSet.hpp>
+#include <ontoflow/render/Mesh.hpp>
+#include <ontoflow/render/PointSet.hpp>
 #include <unordered_map>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Orchestrates the rendering process for the entire CAD scene.
@@ -79,4 +79,4 @@ class RenderingSystem {
     std::shared_ptr<Material> m_PointSetMaterial; ///< Material for rendering point sets.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

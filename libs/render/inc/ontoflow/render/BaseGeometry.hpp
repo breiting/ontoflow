@@ -3,7 +3,7 @@
 #include <ontoflow/domain/Vertex.hpp>
 #include <vector>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Abstract base class for all renderable geometry in the visualization system.
@@ -67,4 +67,4 @@ class BaseGeometry {
     std::vector<domain::Vertex> m_Vertices; ///< CPU-side storage for vertex data.
     bool m_Dirty; ///< Flag indicating if the vertex data has changed and needs re-upload to GPU.
 };
-}  // namespace of::vis
+}  // namespace of::render

@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 class Light {
    public:
@@ -12,4 +12,4 @@ class Light {
     virtual glm::vec3 GetDirection() const = 0;
     virtual glm::vec3 GetPosition() const = 0;
 };
-}  // namespace of::vis
+}  // namespace of::render

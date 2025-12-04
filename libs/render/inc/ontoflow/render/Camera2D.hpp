@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <ontoflow/editor/ICamera.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Implements a 2D orthographic camera for editor views.
@@ -126,4 +126,4 @@ class Camera2D : public editor::ICamera {
     float m_AspectRatio; ///< Aspect ratio of the viewport.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

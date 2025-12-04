@@ -1,8 +1,8 @@
 #include <glad.h>
 
-#include <ontoflow/vis/Mesh.hpp>
+#include <ontoflow/render/Mesh.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 Mesh::Mesh() : m_Vao(0), m_Vbo(0), m_Ebo(0) {
 }
@@ -125,4 +125,4 @@ void Mesh::RecalculateNormals() {
     m_Dirty = true;
 }
 
-}  // namespace of::vis
+}  // namespace of::render

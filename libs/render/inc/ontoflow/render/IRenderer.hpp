@@ -1,9 +1,9 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <ontoflow/vis/Material.hpp>
+#include <ontoflow/render/Material.hpp>
 #include <memory>
 
-namespace of::vis {
+namespace of::render {
 
 class BaseGeometry; // Forward declaration
 class Light; // Forward declaration
@@ -77,4 +77,4 @@ class IRenderer {
     virtual void ToggleWireframe() = 0;
 };
 
-}  // namespace of::vis
+}  // namespace of::render

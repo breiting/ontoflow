@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Manages an OpenGL 2D texture.
@@ -57,4 +57,4 @@ class Texture {
     unsigned int m_TextureId; ///< The OpenGL texture ID.
     int m_Width, m_Height, m_Channels; ///< Width, height, and number of channels of the loaded image.
 };
-}  // namespace of::vis
+}  // namespace of::render

@@ -1,12 +1,12 @@
-#include <ontoflow/vis/DirectionalLight.hpp>
-#include <ontoflow/vis/FlatShadedMaterial.hpp>
-#include <ontoflow/vis/Shader.hpp>
+#include <ontoflow/render/DirectionalLight.hpp>
+#include <ontoflow/render/FlatShadedMaterial.hpp>
+#include <ontoflow/render/Shader.hpp>
 #include <string>
 
 #include "assets/flat_frag.h"  // flat_frag_glsl
 #include "assets/flat_vert.h"  // flat_vert_glsl
 
-namespace of::vis {
+namespace of::render {
 
 FlatShadedMaterial::FlatShadedMaterial(glm::vec3 materialColor) : m_MaterialColor(materialColor) {
     m_Shader = std::make_shared<Shader>(flat_vert_glsl, flat_frag_glsl);
@@ -44,4 +44,4 @@ void FlatShadedMaterial::SetTexture(std::shared_ptr<Texture> texture) {
     m_Texture = texture;
     m_TextureLocation = m_Shader->GetUniformLocation("u_Texture");
 }
-}  // namespace of::vis
+}  // namespace of::render

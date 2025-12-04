@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Represents a single font glyph's bitmap data and metrics.
@@ -87,4 +87,4 @@ class FontLoaderSTB {
     float m_LineGap = 0.f;  ///< Font line gap metric.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

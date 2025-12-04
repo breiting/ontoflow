@@ -1,7 +1,7 @@
-#include <ontoflow/vis/GlyphAtlas.hpp>
+#include <ontoflow/render/GlyphAtlas.hpp>
 #include <vector>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Destructor. Deletes the OpenGL texture associated with the atlas.
@@ -110,4 +110,4 @@ const GlyphAtlas::GlyphUV* GlyphAtlas::GetGlyph(char c) const {
     return (it != m_Glyphs.end()) ? &it->second : nullptr;
 }
 
-}  // namespace of::vis
+}  // namespace of::render

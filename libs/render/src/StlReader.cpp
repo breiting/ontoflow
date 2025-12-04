@@ -4,13 +4,13 @@
 #include <fstream>
 #include <limits>
 #include <ontoflow/core/Logger.hpp> // Include Logger
-#include <ontoflow/vis/StlReader.hpp>
+#include <ontoflow/render/StlReader.hpp>
 #include <sstream>
 #include <string>
 
 using namespace of::domain;
 
-namespace of::vis {
+namespace of::render {
 
 namespace {
 
@@ -230,4 +230,4 @@ enum class StlFormat {
     }
 }
 
-}  // namespace of::vis
+}  // namespace of::render

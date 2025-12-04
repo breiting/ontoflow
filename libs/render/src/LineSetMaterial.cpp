@@ -1,10 +1,10 @@
-#include <ontoflow/vis/LineSetMaterial.hpp>
-#include <ontoflow/vis/Shader.hpp>
+#include <ontoflow/render/LineSetMaterial.hpp>
+#include <ontoflow/render/Shader.hpp>
 
 #include "assets/lineset_frag.h"
 #include "assets/lineset_vert.h"
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Constructs a LineSetMaterial.
@@ -37,4 +37,4 @@ void LineSetMaterial::Apply(const glm::mat4& model, const glm::mat4& view, const
 std::shared_ptr<Shader> LineSetMaterial::GetShader() const {
     return m_Shader;
 }
-}  // namespace of::vis
+}  // namespace of::render

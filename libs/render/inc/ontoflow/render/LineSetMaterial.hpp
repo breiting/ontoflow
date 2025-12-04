@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
-#include <ontoflow/vis/Material.hpp>
+#include <ontoflow/render/Material.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 class Shader; // Forward declaration
 
@@ -39,4 +39,4 @@ class LineSetMaterial : public Material {
    private:
     std::shared_ptr<Shader> m_Shader; ///< The shader program used by this material.
 };
-}  // namespace of::vis
+}  // namespace of::render

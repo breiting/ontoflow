@@ -4,11 +4,11 @@
 #include <ontoflow/domain/Components.hpp>
 #include <ontoflow/domain/Query.hpp>
 #include <ontoflow/editor/ViewController.hpp>
-#include <ontoflow/vis/DirectionalLight.hpp>
-#include <ontoflow/vis/FlatShadedMaterial.hpp>
-#include <ontoflow/vis/LineSetMaterial.hpp>
-#include <ontoflow/vis/PointSetMaterial.hpp>
-#include <ontoflow/vis/RenderingSystem.hpp>
+#include <ontoflow/render/DirectionalLight.hpp>
+#include <ontoflow/render/FlatShadedMaterial.hpp>
+#include <ontoflow/render/LineSetMaterial.hpp>
+#include <ontoflow/render/PointSetMaterial.hpp>
+#include <ontoflow/render/RenderingSystem.hpp>
 
 using namespace of::domain;
 using namespace of::editor;
@@ -16,7 +16,7 @@ using namespace of::editor;
 // Default color for the main light source (Sun)
 const glm::vec3 SUN_LIGHT = {1.0f, 0.95f, 0.9f};
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Constructs a RenderingSystem.
@@ -156,4 +156,4 @@ void RenderingSystem::Render(ICamera* cam) {
     m_Renderer->EndFrame();
 }
 
-}  // namespace of::vis
+}  // namespace of::render

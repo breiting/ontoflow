@@ -1,8 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <ontoflow/vis/Light.hpp>
+#include <ontoflow/render/Light.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Represents a directional light source in the scene.
@@ -47,4 +47,4 @@ class DirectionalLight : public Light {
     glm::vec3 m_Direction; ///< The direction of the light.
     glm::vec3 m_Color;     ///< The color of the light.
 };
-}  // namespace of::vis
+}  // namespace of::render

@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint> // For uint8_t
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Manages font loading and glyph atlas generation for text rendering.
@@ -80,4 +80,4 @@ class FontSystem {
     GlyphAtlas m_Atlas;     ///< The glyph atlas storing rendered glyphs as a texture.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

@@ -1,10 +1,10 @@
 #include <filesystem>
 #include <ontoflow/core/Logger.hpp> // Include Logger
-#include <ontoflow/vis/FontSystem.hpp>
+#include <ontoflow/render/FontSystem.hpp>
 
 #include "roboto_regular.h"
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Loads font data from a memory buffer and builds its glyph atlas.
@@ -72,4 +72,4 @@ bool FontSystem::LoadDefaultFont() {
     return LoadFromMemory(g_RobotoRegular, PIXEL_HEIGHT);
 }
 
-}  // namespace of::vis
+}  // namespace of::render

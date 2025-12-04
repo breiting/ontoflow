@@ -1,10 +1,10 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <memory>
-#include <ontoflow/vis/Material.hpp>
-#include <ontoflow/vis/Shader.hpp>
+#include <ontoflow/render/Material.hpp>
+#include <ontoflow/render/Shader.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 class Shader; // Forward declaration
 
@@ -62,4 +62,4 @@ class PointSetMaterial : public Material {
     float m_Radius = 0.02f;                     ///< Default radius in world units.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

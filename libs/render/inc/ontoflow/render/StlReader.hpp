@@ -3,7 +3,7 @@
 #include <ontoflow/domain/Types.hpp>
 #include <string>
 
-namespace of::vis {
+namespace of::render {
 
 /// \brief Loader for ASCII and binary STL files into a TriMesh.
 ///        Designed as a stateless, reusable component.
@@ -24,4 +24,4 @@ class StlReader final {
     [[nodiscard]] bool LoadFromFile(const std::string& filePath, domain::Mesh& outMesh) const;
 };
 
-}  // namespace of::vis
+}  // namespace of::render

@@ -1,8 +1,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <ontoflow/core/Logger.hpp> // Include Logger
-#include <ontoflow/vis/TextRenderer2D.hpp>
+#include <ontoflow/render/TextRenderer2D.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 static const char* kTextVS = R"(
 #version 410 core
@@ -278,4 +278,4 @@ void TextRenderer2D::DrawText(const std::string& text, float x, float y, float s
     Flush(proj);
 }
 
-}  // namespace of::vis
+}  // namespace of::render

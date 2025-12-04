@@ -1,10 +1,10 @@
 #pragma once
 #include <glm/mat4x4.hpp>
 #include <memory>
-#include <ontoflow/vis/IRenderer.hpp>
-#include <ontoflow/vis/Material.hpp>
+#include <ontoflow/render/IRenderer.hpp>
+#include <ontoflow/render/Material.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 class OpenGLRenderer : public IRenderer {
    public:
@@ -32,4 +32,4 @@ class OpenGLRenderer : public IRenderer {
     bool m_Wireframe;
 };
 
-}  // namespace of::vis
+}  // namespace of::render

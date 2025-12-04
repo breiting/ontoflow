@@ -1,9 +1,9 @@
 #pragma once
 #include <memory>
-#include <ontoflow/vis/Material.hpp>
-#include <ontoflow/vis/Texture.hpp>
+#include <ontoflow/render/Material.hpp>
+#include <ontoflow/render/Texture.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 class Shader; // Forward declaration
 
@@ -59,4 +59,4 @@ class FlatShadedMaterial : public Material {
     std::shared_ptr<Texture> m_Texture; ///< Optional texture for the material.
     int m_TextureLocation; ///< The uniform location for the texture sampler.
 };
-}  // namespace of::vis
+}  // namespace of::render

@@ -4,10 +4,10 @@
 #include <stb_image.h>
 
 #include <ontoflow/core/Logger.hpp> // Include Logger
-#include <ontoflow/vis/Texture.hpp>
+#include <ontoflow/render/Texture.hpp>
 #include <string>
 
-namespace of::vis {
+namespace of::render {
 
 Texture::Texture(const std::string& path) {
     stbi_set_flip_vertically_on_load(true);
@@ -43,4 +43,4 @@ void Texture::Bind(unsigned int texLoc) const {
 void Texture::Unbind() const {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-}  // namespace of::vis
+}  // namespace of::render

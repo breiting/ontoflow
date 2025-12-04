@@ -4,9 +4,9 @@
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <memory>
-#include <ontoflow/vis/Shader.hpp>
+#include <ontoflow/render/Shader.hpp>
 
-namespace of::vis {
+namespace of::render {
 
 /**
  * \brief Renders a 3D coordinate axis gizmo (X, Y, Z axes).
@@ -79,4 +79,4 @@ class AxisRenderer {
     std::unique_ptr<Shader> m_Shader; ///< Shader program used for rendering the axis.
 };
 
-}  // namespace of::vis
+}  // namespace of::render

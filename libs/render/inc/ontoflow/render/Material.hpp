@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-namespace of::vis {
+namespace of::render {
 
 class Shader;
 class Light;
@@ -16,4 +16,4 @@ class Material {
 
     virtual std::shared_ptr<Shader> GetShader() const = 0;
 };
-}  // namespace of::vis
+}  // namespace of::render
