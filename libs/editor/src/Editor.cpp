@@ -13,6 +13,7 @@
 
 using namespace of::domain;
 using namespace of::engine;
+using namespace of::ui;
 
 namespace of::editor {
 
@@ -27,6 +28,7 @@ Editor::Editor(domain::Registry& registry, domain::GeometrySystem& geometrySyste
     ImNodes::StyleColorsDark();
 
     m_Evaluator = std::make_unique<GraphEvaluator>(m_Registry);
+    m_GraphEditorSystem = std::make_unique<GraphEditorSystem>(m_Registry);
 }
 
 Editor::~Editor() {

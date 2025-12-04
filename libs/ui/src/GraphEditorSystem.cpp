@@ -52,12 +52,10 @@ DecodedPin DecodeLinkID(int id) {
 
 namespace of::ui {
 
-GraphEditorSystem::GraphEditorSystem(domain::Registry& registry, of::cmd::CommandStack& commandStack)
-    : m_Registry(registry), m_CommandStack(commandStack) {
+GraphEditorSystem::GraphEditorSystem(domain::Registry& registry) : m_Registry(registry) {
 }
 
 void GraphEditorSystem::ToggleVisibility() {
-    printf("togle\n");
     m_IsVisible = !m_IsVisible;
 }
 

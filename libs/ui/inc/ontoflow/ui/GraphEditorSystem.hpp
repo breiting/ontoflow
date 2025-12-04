@@ -1,11 +1,9 @@
 #pragma once
 
-#include <string>
+#include <glm/vec2.hpp>
 
 #include "ontoflow/command/CommandStack.hpp"
 #include "ontoflow/domain/Registry.hpp"
-#include "ontoflow/domain/Types.hpp"
-#include <glm/vec2.hpp>
 
 // Forward declaration for ImGui context and ImNodes
 namespace ImNodes {
@@ -26,9 +24,8 @@ class GraphEditorSystem final {
     /**
      * \brief Constructs the GraphEditorSystem.
      * \param registry Reference to the ECS registry containing the model data.
-     * \param commandStack Reference to the command stack for executing commands.
      */
-    explicit GraphEditorSystem(domain::Registry& registry, of::cmd::CommandStack& commandStack);
+    explicit GraphEditorSystem(domain::Registry& registry);
 
     /**
      * \brief Draws the main graph editor panel.
@@ -51,7 +48,6 @@ class GraphEditorSystem final {
 
    private:
     domain::Registry& m_Registry;
-    of::cmd::CommandStack& m_CommandStack;
     bool m_IsVisible = true;
 
     // Helper to store position of newly created nodes
