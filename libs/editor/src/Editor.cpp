@@ -9,6 +9,9 @@
 #include <ontoflow/engine/NodeRegistry.hpp>
 #include <ontoflow/nodes/StandardLibrary.hpp>
 
+// Relative path to extern as libs/editor doesn't include it in CMake
+#include "../../../../extern/roboto_regular.h"
+
 using namespace of::domain;
 using namespace of::engine;
 using namespace of::ui;
@@ -16,72 +19,70 @@ using namespace of::nodes;
 
 namespace of::editor {
 
-/**
- * @brief Constructs the Editor. Initializes ImNodes and sets up graph systems.
- */
 Editor::Editor(domain::Registry& registry, domain::GeometrySystem& geometrySystem, IViewportRenderer* renderer)
     : m_Registry(registry),
       m_GeometrySystem(geometrySystem),
       m_Renderer(renderer),
       m_NodeEditorRegistry(m_UiAllocator) {
+    
+    // ImNodes Context
     ImNodes::CreateContext();
-    ImNodes::StyleColorsDark();
-
+    
+    // Initialize Engine Systems
     m_Evaluator = std::make_unique<GraphEvaluator>(m_Registry);
-
-    // graph editor now requires registry + editor registry
+    
+    // Initialize UI Systems
     m_GraphEditorSystem = std::make_unique<GraphEditorSystem>(m_Registry, m_NodeEditorRegistry);
+
+    Initialize();
 }
 
 Editor::~Editor() {
     ImNodes::DestroyContext();
 }
 
+void Editor::Initialize() {
+    // Load Fonts
+    // We use AddFontFromMemoryTTF because the header contains raw TTF data, not compressed.
+    ImGuiIO& io = ImGui::GetIO();
+    ImFontConfig cfg;
+    cfg.FontDataOwnedByAtlas = false; // The data is const static, no need to copy/free
+    io.Fonts->AddFontFromMemoryTTF((void*)g_RobotoRegular, sizeof(g_RobotoRegular), 16.0f, &cfg);
+    
+    // Note: Theme is applied by GraphEditorSystem constructor
+}
+
 void Editor::DrawUI() {
-    // Fullscreen host window for main content
-    ImGuiViewport* vp = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(vp->Pos);
-    ImGui::SetNextWindowSize(vp->Size);
-    ImGui::SetNextWindowViewport(vp->ID);
-
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
-                             ImGuiWindowFlags_NoNavFocus;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-
-    if (ImGui::Begin("MainViewport", nullptr, flags)) {
-        ImGui::PopStyleVar(2);
-
-        bool changed = false;
-        if (m_GraphEditorSystem) {
-            // Draw node editor as embedded content
-            changed |= m_GraphEditorSystem->DrawEmbedded();
-        }
-
-        if (changed)
-            m_NeedsEvaluation = true;
-    } else {
-        ImGui::PopStyleVar(2);
+    // We don't create a window here anymore, we let GraphEditorSystem handle the layout
+    // into the main viewport.
+    
+    if (m_GraphEditorSystem) {
+        m_GraphEditorSystem->DrawLayout([this](const std::string& cmd) {
+            ExecuteCommand(cmd);
+        });
     }
 
-    ImGui::End();
-
+    // Render Window (Overlay or separate?)
+    // The layout task specified full screen layout. 
+    // If we want to see the 3D view, we might need a specific node or toggle.
+    // Existing code had m_ShowRenderWindow. Let's keep it optional or integrate it?
+    // The task didn't specify where the 3D view goes. 
+    // But "GraphEditorSystem" takes the center.
+    // Maybe we can make the "Graph" panel switchable to "Viewport".
+    // For now, let's keep the 3D view as a separate window if enabled, 
+    // but strictly following the layout, it might overlap.
+    
     if (m_ShowRenderWindow) {
         if (ImGui::Begin("3D View")) {
             ImVec2 avail = ImGui::GetContentRegionAvail();
             if (avail.x > 0.0f && avail.y > 0.0f) {
                 ImVec2 pos = ImGui::GetCursorScreenPos();
-
                 ImGui::InvisibleButton("##3DViewCanvas", avail);
 
-                // Get FrameBuffer size
                 ImGuiIO& io = ImGui::GetIO();
                 const int fbHeight = static_cast<int>(io.DisplaySize.y);
-
                 int x = (int)pos.x;
-                int y = fbHeight - (int)pos.y - (int)avail.y;  // Y-flip
+                int y = fbHeight - (int)pos.y - (int)avail.y;
                 int w = (int)avail.x;
                 int h = (int)avail.y;
 
@@ -94,9 +95,6 @@ void Editor::DrawUI() {
     }
 }
 
-/**
- * @brief Called every frame to update cameras and process evaluation.
- */
 void Editor::Update(double dt) {
     if (m_NeedsEvaluation) {
         if (m_SinkNodeID != INVALID_ENTITY) {
@@ -108,6 +106,38 @@ void Editor::Update(double dt) {
     }
 
     m_ViewController.Update(dt);
+}
+
+void Editor::ExecuteCommand(const std::string& cmd) {
+    LOG(Info) << "Command: " << cmd;
+
+    if (cmd == ":box") {
+        // Spawn Box
+        auto e = NodeRegistry::Instance().SpawnNode(m_Registry, "GEOM_BOX");
+        // Place it near center? GraphEditorSystem handles placement via "SpawnPos" logic usually,
+        // but here we might just let it be at 0,0 or update position.
+        // We can access internal registry to move it?
+        // The UI system syncs position from component.
+        if (auto* node = m_Registry.GetComponent<NodeComponent>(e)) {
+             node->ui = {0.0f, 0.0f}; // Reset to center
+        }
+    } 
+    else if (cmd == ":val") {
+        auto e = NodeRegistry::Instance().SpawnNode(m_Registry, "FLOAT_VALUE");
+        if (auto* node = m_Registry.GetComponent<NodeComponent>(e)) {
+             node->ui = {0.0f, 0.0f};
+        }
+    }
+    else if (cmd == ":evaluate") {
+        m_NeedsEvaluation = true;
+    }
+    else if (cmd == ":clear") {
+         // Basic clear?
+         // m_Registry.Clear(); // Logic to clear nodes
+    }
+    else if (cmd == ":view") {
+        m_ShowRenderWindow = !m_ShowRenderWindow;
+    }
 }
 
 void Editor::SetCamera2D(std::shared_ptr<ICamera> cam) {
@@ -126,9 +156,6 @@ ICamera* Editor::GetActiveCamera() {
     return m_ViewController.GetActiveCamera();
 }
 
-/**
- * @brief Dispatch input to tools + cameras.
- */
 void Editor::OnInput(const InputEvent& ev) {
     if (auto* key = AsKey(ev))
         HandleKey(*key);
@@ -136,94 +163,16 @@ void Editor::OnInput(const InputEvent& ev) {
     m_ViewController.OnInput(ev);
 }
 
-/**
- * @brief Handle keyboard shortcuts.
- */
 void Editor::HandleKey(const KeyEvent& key) {
     if (!key.pressed)
         return;
-
-    float diff = 0.1;
-
-    // Debug: adjust width value
-    if (key.text == 'k' && m_WidthNodeID != INVALID_ENTITY) {
-        if (auto* node = m_Registry.GetComponent<NodeComponent>(m_WidthNodeID)) {
-            if (auto* val = std::get_if<double>(&node->outputs[0].value)) {
-                *val += diff;
-                node->isDirty = true;
-                m_NeedsEvaluation = true;
-                LOG(Info) << "Width increased.";
-                return;
-            }
-        }
-    }
-
-    if (key.text == 'j' && m_WidthNodeID != INVALID_ENTITY) {
-        if (auto* node = m_Registry.GetComponent<NodeComponent>(m_WidthNodeID)) {
-            if (auto* val = std::get_if<double>(&node->outputs[0].value)) {
-                *val -= diff;
-                node->isDirty = true;
-                m_NeedsEvaluation = true;
-                LOG(Info) << "Width decreased.";
-                return;
-            }
-        }
-    }
-
-    // 'p' → dump ECS registry
-    if (key.text == 'p') {
-        LOG(Info) << "Dumping registry...";
-        m_Registry.Dump();
+        
+    // Shortcuts can still work
+    if (key.text == ':' && m_GraphEditorSystem) {
+        m_GraphEditorSystem->RequestCommandFocus();
     }
 }
 
-/**
- * @brief Build a simple demonstration graph (Value → Box).
- */
-void Editor::InitializeDemoGraph() {
-    auto& registry = m_Registry;
-    auto& backend = m_GeometrySystem.GetBackend();
-
-    GraphEvaluator evaluator(registry);
-
-    StandardLibrary::RegisterAll(backend);
-
-    // 1. Spawn Nodes
-    Entity width = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Width");
-    Entity length = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Height");
-    Entity height = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Length");
-    Entity box = NodeRegistry::Instance().SpawnNode(registry, "GEOM_BOX", "Box 1");
-    Entity deflection = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Deflection");
-    Entity filename = NodeRegistry::Instance().SpawnNode(registry, "STRING_VALUE", "FileName");
-    Entity exportStl = NodeRegistry::Instance().SpawnNode(registry, "SINK_SAVE_STL", "ExportSTL", {200, 200});
-
-    // 2. Set Values
-    registry.GetComponent<NodeComponent>(width)->outputs[0].value = 5.0;
-    registry.GetComponent<NodeComponent>(length)->outputs[0].value = 3.0;
-    registry.GetComponent<NodeComponent>(height)->outputs[0].value = 2.0;
-
-    // 3. Connect
-    auto* boxNode = registry.GetComponent<NodeComponent>(box);
-    boxNode->inputs[0].connection = {width, 0};
-    boxNode->inputs[1].connection = {length, 0};
-    boxNode->inputs[2].connection = {height, 0};
-
-    auto* exportNode = registry.GetComponent<NodeComponent>(exportStl);
-    exportNode->inputs[0].connection = {filename, 0};
-    exportNode->inputs[1].connection = {deflection, 0};
-    exportNode->inputs[2].connection = {box, 0};
-
-    // 4. Evaluate
-    LOG(Info) << "Evaluating Box Node...";
-    evaluator.Evaluate(exportStl);
-
-    m_SinkNodeID = exportStl;
-    m_NeedsEvaluation = true;
-}
-
-/**
- * @brief Convert all OCCT BodyComponents into MeshComponents.
- */
 void Editor::SyncMeshes() {
     auto& backend = m_GeometrySystem.GetBackend();
 

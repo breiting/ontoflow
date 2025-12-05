@@ -1,6 +1,8 @@
 #include <imgui.h>
 #include <imnodes.h>
+#include <map>
 
+#include <ontoflow/core/Colors.hpp>
 #include <ontoflow/core/Logger.hpp>
 #include <ontoflow/domain/Components.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
@@ -8,8 +10,70 @@
 
 namespace of::ui {
 
+using namespace of::core;
+
 GraphEditorSystem::GraphEditorSystem(domain::Registry& reg, NodeEditorRegistry& editorReg)
     : m_Registry(reg), m_EditorReg(editorReg) {
+    ApplyTheme();
+}
+
+void GraphEditorSystem::ApplyTheme() {
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowRounding = 8.0f;
+    style.FrameRounding = 5.0f;
+    style.PopupRounding = 5.0f;
+    style.ScrollbarRounding = 12.0f;
+    style.GrabRounding = 5.0f;
+    style.TabRounding = 5.0f;
+
+    style.ItemSpacing = ImVec2(10, 8);
+    style.WindowPadding = ImVec2(15, 15);
+    style.FramePadding = ImVec2(6, 4);
+
+    // Colors (Nord)
+    auto toImVec4 = [](const glm::vec4& v) { return ImVec4(v.r, v.g, v.b, v.a); };
+
+    style.Colors[ImGuiCol_Text] = toImVec4(nord::Nord6);
+    style.Colors[ImGuiCol_WindowBg] = toImVec4(nord::Nord0);
+    style.Colors[ImGuiCol_ChildBg] = toImVec4(nord::Nord0);
+    style.Colors[ImGuiCol_PopupBg] = toImVec4(nord::Nord1);
+    style.Colors[ImGuiCol_Border] = toImVec4(nord::Nord3);
+    style.Colors[ImGuiCol_FrameBg] = toImVec4(nord::Nord1);
+    style.Colors[ImGuiCol_FrameBgHovered] = toImVec4(nord::Nord2);
+    style.Colors[ImGuiCol_FrameBgActive] = toImVec4(nord::Nord3);
+    style.Colors[ImGuiCol_TitleBg] = toImVec4(nord::Nord1);
+    style.Colors[ImGuiCol_TitleBgActive] = toImVec4(nord::Nord2);
+    style.Colors[ImGuiCol_Button] = toImVec4(nord::Nord3);
+    style.Colors[ImGuiCol_ButtonHovered] = toImVec4(nord::Nord9);  // Frost Blue
+    style.Colors[ImGuiCol_ButtonActive] = toImVec4(nord::Nord10);
+    style.Colors[ImGuiCol_Header] = toImVec4(nord::Nord3);
+    style.Colors[ImGuiCol_HeaderHovered] = toImVec4(nord::Nord9);
+    style.Colors[ImGuiCol_HeaderActive] = toImVec4(nord::Nord10);
+    style.Colors[ImGuiCol_Separator] = toImVec4(nord::Nord3);
+    style.Colors[ImGuiCol_ResizeGrip] = toImVec4(nord::Nord3);
+    style.Colors[ImGuiCol_ResizeGripHovered] = toImVec4(nord::Nord9);
+    style.Colors[ImGuiCol_ResizeGripActive] = toImVec4(nord::Nord10);
+    style.Colors[ImGuiCol_PlotLines] = toImVec4(nord::Nord14);
+    style.Colors[ImGuiCol_PlotLinesHovered] = toImVec4(nord::Nord14);
+
+    // ImNodes Style
+    ImNodes::StyleColorsDark();
+    ImNodesStyle& nStyle = ImNodes::GetStyle();
+    nStyle.Colors[ImNodesCol_GridBackground] = IM_COL32(46, 52, 64, 255); // Nord0
+    nStyle.Colors[ImNodesCol_GridLine] = IM_COL32(59, 66, 82, 255);       // Nord1
+    nStyle.Colors[ImNodesCol_NodeBackground] = IM_COL32(59, 66, 82, 255); // Nord1
+    nStyle.Colors[ImNodesCol_NodeBackgroundHovered] = IM_COL32(67, 76, 94, 255); // Nord2
+    nStyle.Colors[ImNodesCol_NodeBackgroundSelected] = IM_COL32(76, 86, 106, 255); // Nord3
+    nStyle.Colors[ImNodesCol_TitleBar] = IM_COL32(59, 66, 82, 255);
+    nStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(76, 86, 106, 255);
+    nStyle.Colors[ImNodesCol_Link] = IM_COL32(216, 222, 233, 255); // Nord4
+    nStyle.Colors[ImNodesCol_LinkSelected] = IM_COL32(136, 192, 208, 255); // Nord8
+    nStyle.Colors[ImNodesCol_Pin] = IM_COL32(136, 192, 208, 255); // Nord8
+    nStyle.Colors[ImNodesCol_PinHovered] = IM_COL32(129, 161, 193, 255); // Nord9
+
+    nStyle.NodeCornerRounding = 5.0f;
+    nStyle.NodePadding = ImVec2(12, 8);
+    nStyle.PinCircleRadius = 4.0f;
 }
 
 glm::vec2 GraphEditorSystem::GetMouseGridPos() const {
@@ -19,32 +83,168 @@ glm::vec2 GraphEditorSystem::GetMouseGridPos() const {
     return {local.x, local.y};
 }
 
-bool GraphEditorSystem::DrawPanel() {
-    bool changed = false;
+void GraphEditorSystem::DrawLayout(std::function<void(const std::string&)> onCommandCallback) {
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImVec2 workPos = viewport->WorkPos;
+    ImVec2 workSize = viewport->WorkSize;
 
-    ImGui::Begin("OntoFlow Graph Editor");
+    // Fixed dimensions
+    const float toolbarWidth = 64.0f;
+    const float libraryWidth = 250.0f;
+    const float bottomHeight = 30.0f;
+    const float centerWidth = workSize.x - toolbarWidth - libraryWidth;
+    const float centerHeight = workSize.y - bottomHeight;
 
-    // Toolbar
-    ImGui::Text("Tools:");
-    ImGui::SameLine();
-    if (ImGui::Button("Dump Positions"))
-        DumpNodePositions();
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                                   ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-    ImGui::Dummy(ImVec2(0, 6));
-
-    // Node Editor inside Child
-    ImGui::BeginChild("NodeRegion", ImVec2(0, 0), true);
-
-    changed = DrawNodeEditorInternal();
-
-    ImGui::EndChild();
+    // 1. Left Toolbar
+    ImGui::SetNextWindowPos({workPos.x, workPos.y});
+    ImGui::SetNextWindowSize({toolbarWidth, centerHeight});
+    if (ImGui::Begin("Toolbar", nullptr, windowFlags)) {
+        DrawToolbar();
+    }
     ImGui::End();
 
-    return changed;
+    // 2. Right Library
+    ImGui::SetNextWindowPos({workPos.x + workSize.x - libraryWidth, workPos.y});
+    ImGui::SetNextWindowSize({libraryWidth, centerHeight});
+    if (ImGui::Begin("Library", nullptr, windowFlags)) {
+        DrawNodeLibrary();
+    }
+    ImGui::End();
+
+    // 3. Bottom Status
+    ImGui::SetNextWindowPos({workPos.x, workPos.y + centerHeight});
+    ImGui::SetNextWindowSize({workSize.x, bottomHeight});
+    // Use a distinct color for status bar
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(46, 52, 64, 255)); // Nord0
+    if (ImGui::Begin("StatusBar", nullptr, windowFlags)) {
+        DrawStatusBar();
+        DrawCommandPalette(onCommandCallback);
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+
+    // 4. Center Graph
+    ImGui::SetNextWindowPos({workPos.x + toolbarWidth, workPos.y});
+    ImGui::SetNextWindowSize({centerWidth, centerHeight});
+    // The Graph window is just a container for ImNodes
+    if (ImGui::Begin("GraphRegion", nullptr, windowFlags)) {
+        DrawNodeEditorInternal();
+    }
+    ImGui::End();
 }
 
-bool GraphEditorSystem::DrawEmbedded() {
-    return DrawNodeEditorInternal();
+void GraphEditorSystem::DrawToolbar() {
+    ImVec2 btnSize(40, 40);
+    float availX = ImGui::GetContentRegionAvail().x;
+    float offsetX = (availX - btnSize.x) * 0.5f;
+
+    auto toolBtn = [&](const char* label) {
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+        if (ImGui::Button(label, btnSize)) {
+            // Todo: Actions
+        }
+        ImGui::Dummy(ImVec2(0, 10));
+    };
+
+    ImGui::Dummy(ImVec2(0, 10));
+    toolBtn("[+]"); // New
+    toolBtn("[S]"); // Save
+    toolBtn("[L]"); // Load
+    toolBtn("[C]"); // Clear
+
+    // Spacer
+    ImGui::Dummy(ImVec2(0, 20));
+    ImGui::Separator();
+    ImGui::Dummy(ImVec2(0, 20));
+
+    toolBtn("[D]"); // Debug/Dump
+}
+
+void GraphEditorSystem::DrawNodeLibrary() {
+    ImGui::TextDisabled("NODE LIBRARY");
+    ImGui::Separator();
+    ImGui::Dummy(ImVec2(0, 5));
+
+    // Search
+    m_NodeFilter.Draw("##Search", ImGui::GetContentRegionAvail().x);
+    ImGui::Dummy(ImVec2(0, 10));
+
+    const auto& defs = engine::NodeRegistry::Instance().GetDefinitions();
+    
+    // Group by category
+    // Simplification: Just iterate and maybe sort by category or use header per category
+    // For now, just list them, or check category string. 
+    
+    // Let's collect categories first
+    std::map<std::string, std::vector<const engine::NodeDefinition*>> categorized;
+    for(const auto& [id, def] : defs) {
+        if (m_NodeFilter.PassFilter(def.name.c_str())) {
+            categorized[def.category.empty() ? "General" : def.category].push_back(&def);
+        }
+    }
+
+    for (const auto& [cat, nodes] : categorized) {
+        if (ImGui::CollapsingHeader(cat.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+            for (const auto* def : nodes) {
+                ImGui::PushID(def);
+                // Draggable Button
+                ImGui::Button(def->name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0));
+                
+                // Drag Source
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                     // Pass the ID string as payload
+                    // Find the ID for this def (a bit inefficient reverse lookup, but registry is small)
+                    // Better: store ID in NodeDefinition? Or change map iteration.
+                    // Let's find the ID.
+                    std::string opID;
+                    for(const auto& [k, v] : defs) {
+                        if (&v == def) { opID = k; break; }
+                    }
+
+                    ImGui::SetDragDropPayload("DND_NODE_DEF", opID.c_str(), opID.size() + 1);
+                    ImGui::Text("Spawn %s", def->name.c_str());
+                    ImGui::EndDragDropSource();
+                }
+
+                ImGui::PopID();
+            }
+        }
+    }
+}
+
+void GraphEditorSystem::DrawStatusBar() {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextColored(ImVec4(0.5f, 0.7f, 0.5f, 1.0f), "Status: %s", m_LastStatusMessage.c_str());
+    ImGui::SameLine();
+    ImGui::TextDisabled("|");
+    ImGui::SameLine();
+}
+
+void GraphEditorSystem::DrawCommandPalette(std::function<void(const std::string&)> onCommandCallback) {
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    
+    // Focus check
+    if (m_FocusCommand) {
+        ImGui::SetKeyboardFocusHere();
+        m_FocusCommand = false;
+    }
+
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+    if (ImGui::InputText("##Command", m_CommandBuffer, IM_ARRAYSIZE(m_CommandBuffer), flags)) {
+        std::string cmd = m_CommandBuffer;
+        if (!cmd.empty() && onCommandCallback) {
+            onCommandCallback(cmd);
+            m_LastStatusMessage = "Executed: " + cmd;
+        }
+        // Clear
+        m_CommandBuffer[0] = '\0';
+        // Keep focus
+        m_FocusCommand = true;
+    }
 }
 
 bool GraphEditorSystem::DrawNodeEditorInternal() {
@@ -85,26 +285,19 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
         }
     }
 
-    // ------------------ CONTEXT MENU (Create) ----------------
-    if (ImNodes::IsEditorHovered() && ImGui::IsMouseClicked(1)) {
-        ImGui::OpenPopup("NodeCreatePopup");
-        m_SpawnPos = GetMouseGridPos();
-    }
-
-    if (ImGui::BeginPopup("NodeCreatePopup")) {
-        const auto& defs = engine::NodeRegistry::Instance().GetDefinitions();
-
-        for (const auto& [id, def] : defs) {
-            if (ImGui::MenuItem(def.name.c_str())) {
-                auto newNode = engine::NodeRegistry::Instance().SpawnNode(m_Registry, id);
-                ImNodes::SetNodeGridSpacePos(m_EditorReg.GetNodeId(newNode), ImVec2(m_SpawnPos.x, m_SpawnPos.y));
-            }
-        }
-
-        ImGui::EndPopup();
-    }
-
     ImNodes::EndNodeEditor();
+
+    // ----------------- DRAG & DROP TARGET --------------------
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_NODE_DEF")) {
+            std::string opID = (const char*)payload->Data;
+            glm::vec2 mPos = GetMouseGridPos();
+            auto newNode = engine::NodeRegistry::Instance().SpawnNode(m_Registry, opID);
+            ImNodes::SetNodeGridSpacePos(m_EditorReg.GetNodeId(newNode), ImVec2(mPos.x, mPos.y));
+            m_LastStatusMessage = "Spawned " + opID;
+        }
+        ImGui::EndDragDropTarget();
+    }
 
     // ----------------- LINK CREATION/DELETION ----------------
     int startPin, endPin;
@@ -112,6 +305,7 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
         auto outPin = m_EditorReg.DecodePin(startPin);
         auto inPin = m_EditorReg.DecodePin(endPin);
 
+        // Ensure strict Direction (Output -> Input)
         if (outPin.isOutput && !inPin.isOutput) {
             auto* target = m_Registry.GetComponent<domain::NodeComponent>(inPin.node);
             target->inputs[inPin.pinIndex].connection = {outPin.node, outPin.pinIndex};
@@ -139,7 +333,7 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     int uiNode = m_EditorReg.GetNodeId(e);
 
     const auto* def = engine::NodeRegistry::Instance().GetDefinition(node.definitionID);
-    const char* roleLabel = def->category.c_str();
+    const char* roleLabel = def ? def->category.c_str() : "Unknown";
 
     std::string displayName;
     if (nameComp && !nameComp->name.empty())
@@ -149,6 +343,7 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     else
         displayName = node.definitionID;
 
+    // First frame positioning
     if (node.ui.x >= 0 && node.ui.y >= 0 && !m_EditorReg.HasSeenNode(uiNode)) {
         ImNodes::SetNodeGridSpacePos(uiNode, {node.ui.x, node.ui.y});
         m_EditorReg.MarkNodeSeen(uiNode);
@@ -158,20 +353,13 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
 
     // ---------------- HEADER ----------------
     ImNodes::BeginNodeTitleBar();
-    ImGui::Text("%s    ID: %u", displayName.c_str(), e);
+    ImGui::Text("%s", displayName.c_str());
+    ImGui::TextDisabled("ID: %u", e);
     ImNodes::EndNodeTitleBar();
 
     // ---------------- ROLE SECTION ----------------
-    {
-        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180, 180, 180, 255));
-        ImGui::SetWindowFontScale(0.90f);
-        ImGui::Text("%s", roleLabel);
-        ImGui::SetWindowFontScale(1.0f);
-        ImGui::PopStyleColor();
-    }
-
-    DrawThinSeparator();
-
+    // DrawThinSeparator(); // Optional style choice
+    
     // ---------------------------------------------------------
     // VALUE-Float Node has special layout
     // ---------------------------------------------------------
@@ -237,10 +425,8 @@ void GraphEditorSystem::DrawThinSeparator(float thickness) {
     ImVec2 min = ImGui::GetCursorScreenPos();
     ImVec2 max = {min.x + ImGui::CalcTextSize("W").x * 4.0f, min.y + thickness};
 
-    // A short light line
     ImGui::GetWindowDrawList()->AddLine({min.x, min.y}, {min.x + 80.0f, min.y}, IM_COL32(150, 150, 150, 100),
                                         thickness);
-
     ImGui::Dummy({80.0f, thickness + 2.0f});
 }
 

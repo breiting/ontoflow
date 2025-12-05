@@ -36,6 +36,9 @@ class Editor {
     void DrawUI();
     void Update(double dt);
 
+    void Initialize();
+    void ExecuteCommand(const std::string& cmd);
+
     void SetCamera2D(std::shared_ptr<ICamera> cam);
     void SetCamera3D(std::shared_ptr<ICamera> cam);
     void SetViewportSize(int w, int h);
@@ -43,7 +46,7 @@ class Editor {
 
     void OnInput(const InputEvent& ev);
 
-    void InitializeDemoGraph();
+    // void InitializeDemoGraph();
 
    private:
     void HandleKey(const KeyEvent& key);

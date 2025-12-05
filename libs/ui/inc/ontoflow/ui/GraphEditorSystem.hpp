@@ -5,9 +5,12 @@
  *        node graph using ImGui + ImNodes.
  */
 
+#include <functional>
 #include <glm/vec2.hpp>
+#include <imgui.h>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/ui/NodeEditorRegistry.hpp>
+#include <string>
 
 namespace of::ui {
 
@@ -21,26 +24,24 @@ class GraphEditorSystem {
     GraphEditorSystem(domain::Registry& registry, NodeEditorRegistry& editorRegistry);
 
     /**
-     * @brief Draw the entire node editor panel.
-     * @return True if the graph topology changed (links added/removed).
+     * @brief Draws the full editor layout including Toolbar, Node Library, and Graph.
+     * @param onCommandCallback Function to execute when a command is submitted.
      */
-    bool DrawPanel();
+    void DrawLayout(std::function<void(const std::string&)> onCommandCallback);
 
-    /**
-     * @brief Draws the node editor into the *currently active* ImGui window.
-     *
-     * This does not open or close any ImGui window. It expects that the caller
-     * already called ImGui::Begin() on some window. This is ideal for embedding
-     * the node editor as the main content region.
-     *
-     * @return True if the graph topology changed (links added/removed).
-     */
-    bool DrawEmbedded();
+    void RequestCommandFocus() {
+        m_FocusCommand = true;
+    }
 
    private:
+    void DrawToolbar();
+    void DrawNodeLibrary();
+    void DrawStatusBar();
+    void DrawCommandPalette(std::function<void(const std::string&)> onCommandCallback);
+    void ApplyTheme();
+
     bool DrawNodeEditorInternal();
     glm::vec2 GetMouseGridPos() const;
-    /// Draw a single node and return true if its internal state changed.
     bool DrawSingleNode(domain::Entity e, domain::NodeComponent& node, domain::NameComponent* nameComp);
     void DrawThinSeparator(float thickness = 1.0f);
     void DumpNodePositions() const;
@@ -50,6 +51,10 @@ class GraphEditorSystem {
     NodeEditorRegistry& m_EditorReg;
 
     glm::vec2 m_SpawnPos{0.f, 0.f};
+    ImGuiTextFilter m_NodeFilter;
+    char m_CommandBuffer[256] = "";
+    bool m_FocusCommand = false;
+    std::string m_LastStatusMessage = "Ready";
 };
 
 }  // namespace of::ui

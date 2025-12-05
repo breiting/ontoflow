@@ -2,6 +2,7 @@
 #include <ontoflow/domain/GeometrySystem.hpp>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/Editor.hpp>
+#include <ontoflow/nodes/StandardLibrary.hpp>
 #include <ontoflow/render/OpenGLRenderer.hpp>
 #include <ontoflow/render/RenderingSystem.hpp>
 #include <ontoflow/ui/Window.hpp>
@@ -13,6 +14,7 @@
 using namespace of;
 using namespace of::editor;
 using namespace of::render;
+using namespace of::nodes;
 
 static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
     using namespace of;
@@ -75,6 +77,8 @@ int main() {
     occt::OCCTBackend backend;
     domain::GeometrySystem geometrySystem(registry, backend);
 
+    StandardLibrary::RegisterAll(backend);
+
     // RenderingSystem (after Window initialization)
     auto renderer = std::make_unique<OpenGLRenderer>();
     RenderingSystem renderingSystem(std::move(renderer));
@@ -90,7 +94,7 @@ int main() {
     editor.SetCamera3D(cam3D);
 
     // Demo nodes
-    editor.InitializeDemoGraph();
+    // editor.InitializeDemoGraph();
 
     // ----------------------------------------------------
     // 3. Connect window input → editor input
