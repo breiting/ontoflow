@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imnodes.h>
 #include <map>
 
@@ -287,7 +288,7 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
         }
     }
     
-    // 2. Explicit Deletion via DELETE key
+    // 2. Explicit Deletion via DELETE key (LINKS)
     const int numSelectedLinks = ImNodes::NumSelectedLinks();
     if (numSelectedLinks > 0 && ImGui::IsKeyReleased(ImGuiKey_Delete)) {
         std::vector<int> selectedLinks(numSelectedLinks);
@@ -303,7 +304,101 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
         }
     }
 
+    // 3. Explicit Deletion via DELETE key (NODES)
+    const int numSelectedNodes = ImNodes::NumSelectedNodes();
+    if (numSelectedNodes > 0 && ImGui::IsKeyReleased(ImGuiKey_Delete)) {
+        std::vector<int> selectedNodes(numSelectedNodes);
+        ImNodes::GetSelectedNodes(selectedNodes.data());
+
+        // 1. Collect all nodes to check for connections *to* the deleted nodes
+        auto allNodes = m_Registry.GetEntitiesWith<domain::NodeComponent>();
+
+        for (int nodeId : selectedNodes) {
+            // Decode the entity ID from the ImNodes ID
+            // (Assuming 1:1 mapping or stored in user pointer, but here we rely on NodeEditorRegistry reverse lookup?
+            //  Actually NodeEditorRegistry::GetNodeId gives us Entity -> int. We need int -> Entity.
+            //  But wait! We don't have a reverse map in NodeEditorRegistry public API easily.
+            //  Let's check if we can get it. If not, we might need to iterate all nodes to find the match,
+            //  OR we can iterate 'allNodes' and check if GetNodeId(e) is in selectedNodes.)
+            
+            // Optimization: Instead of full reverse lookup, let's iterate all entities once and check against selection.
+        }
+
+        // Better approach:
+        std::vector<domain::Entity> nodesToDelete;
+        for (auto e : allNodes) {
+            int id = m_EditorReg.GetNodeId(e);
+            // Check if 'id' is in 'selectedNodes'
+            for (int sel : selectedNodes) {
+                if (sel == id) {
+                    nodesToDelete.push_back(e);
+                    break;
+                }
+            }
+        }
+
+        for (auto eToDelete : nodesToDelete) {
+            // A. Remove connections TO this node (inputs of OTHER nodes pointing here)
+            //    Actually, our graph stores connections in the INPUTS.
+            //    So we need to check every node's inputs to see if they point to 'eToDelete'.
+            for (auto otherE : allNodes) {
+                if (otherE == eToDelete) continue; // Skip self (will be destroyed anyway)
+                auto* otherNode = m_Registry.GetComponent<domain::NodeComponent>(otherE);
+                if (!otherNode) continue;
+
+                for (auto& pin : otherNode->inputs) {
+                    if (pin.connection.targetNodeID == eToDelete) {
+                        pin.connection = {}; // Sever connection
+                        otherNode->isDirty = true;
+                    }
+                }
+            }
+
+            // B. Destroy the entity
+            m_Registry.DestroyEntity(eToDelete);
+            graphChanged = true;
+        }
+    }
+
     return graphChanged;
+}
+
+// Custom Toggle Switch Helper
+bool ToggleSwitch(const char* label, bool* v) {
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    float height = ImGui::GetFrameHeight();
+    float width = height * 1.55f;
+    float radius = height * 0.50f;
+
+    ImGui::InvisibleButton(label, ImVec2(width, height));
+    if (ImGui::IsItemClicked())
+        *v = !*v;
+
+    float t = *v ? 1.0f : 0.0f;
+
+    ImGuiContext& g = *GImGui;
+    float ANIM_SPEED = 0.08f;
+    if (g.LastActiveId == g.CurrentWindow->GetID(label)) { // Simple animation state logic
+        float t_anim = ImSaturate(g.LastActiveIdTimer / ANIM_SPEED);
+        t = *v ? (t_anim) : (1.0f - t_anim);
+    }
+
+    ImU32 col_bg;
+    if (ImGui::IsItemHovered())
+        col_bg = ImGui::GetColorU32(*v ? ImVec4(0.56f, 0.84f, 0.90f, 1.0f) : ImVec4(0.35f, 0.39f, 0.48f, 1.0f)); // Nord9 : Nord3
+    else
+        col_bg = ImGui::GetColorU32(*v ? ImVec4(0.53f, 0.75f, 0.82f, 1.0f) : ImVec4(0.29f, 0.34f, 0.42f, 1.0f)); // Nord8 : Nord2
+
+    draw_list->AddRectFilled(p, ImVec2(p.x + width, p.y + height), col_bg, height * 0.5f);
+    draw_list->AddCircleFilled(ImVec2(p.x + radius + t * (width - radius * 2.0f), p.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
+    
+    // Label
+    ImGui::SameLine();
+    ImGui::Text("%s", ""); // Use empty label to align, render label manually if needed or let caller handle
+
+    return *v; 
 }
 
 bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& node, domain::NameComponent* nameComp) {
@@ -376,7 +471,11 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
                 bool v = false;
                 if (auto* pv = std::get_if<bool>(&pin.value))
                     v = *pv;
-                if (ImGui::Checkbox("##val", &v)) {
+                
+                // Use Custom Toggle Switch
+                bool oldV = v;
+                ToggleSwitch("##val", &v); 
+                if (v != oldV) {
                     pin.value = v;
                     node.isDirty = true;
                     changed = true;

@@ -72,6 +72,14 @@ class Registry {
         return m_NextId++;
     }
 
+    void DestroyEntity(Entity e) {
+        for (auto& [type, storage] : m_Storages) {
+            if (storage && storage->Has(e)) {
+                storage->Remove(e);
+            }
+        }
+    }
+
     // --------- COMPONENT CORE API ----------
 
     template <typename T>
