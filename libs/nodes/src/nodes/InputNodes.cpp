@@ -34,6 +34,22 @@ void RegisterInputNodes() {
     strDef.outputs.push_back(Pin{"Out", PinType::STRING});
     strDef.compute = [](NodeComponent&, Registry&) { /* Static value passed through */ };
     reg.RegisterNode("STRING_VALUE", strDef);
+
+    // --- Bool Value Node ---
+    NodeDefinition boolDef;
+    boolDef.name = "Value (Bool)";
+    boolDef.category = "Input";
+    boolDef.outputs.push_back(Pin{"Out", PinType::BOOL});
+    boolDef.compute = [](NodeComponent&, Registry&) { /* Static value passed through */ };
+    reg.RegisterNode("BOOL_VALUE", boolDef);
+
+    // --- Vec3 Value Node ---
+    NodeDefinition vec3Def;
+    vec3Def.name = "Value (Vec3)";
+    vec3Def.category = "Input";
+    vec3Def.outputs.push_back(Pin{"Out", PinType::VEC3});
+    vec3Def.compute = [](NodeComponent&, Registry&) { /* Static value passed through */ };
+    reg.RegisterNode("VEC3_VALUE", vec3Def);
 }
 
 }  // namespace of::nodes

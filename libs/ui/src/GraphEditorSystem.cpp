@@ -337,28 +337,84 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     const float NODE_WIDTH = 200.0f;
     ImGui::Dummy(ImVec2(NODE_WIDTH, 0.0f));
 
-    bool isValueFloat =
-        node.inputs.empty() && node.outputs.size() == 1 && node.outputs[0].type == domain::PinType::DOUBLE;
+    bool isValueNode = node.inputs.empty() && node.outputs.size() == 1;
 
-    if (isValueFloat) {
+    if (isValueNode) {
         int outPin = m_EditorReg.GetPinId(e, 0, true);
         ImNodes::BeginOutputAttribute(outPin);
 
-        ImGui::Text("Value");
+        ImGui::Text("%s", node.outputs[0].name.c_str());
         ImGui::SameLine();
 
-        double v = 0.0;
-        if (auto* pv = std::get_if<double>(&node.outputs[0].value))
-            v = *pv;
+        auto& pin = node.outputs[0];
+        ImGui::PushItemWidth(100.0f);
 
-        ImGui::PushItemWidth(80.0f);
-        if (ImGui::InputDouble("##val", &v, 0.0, 0.0, "%.3f")) { // Using 0.0 step for direct input, default format
-            node.outputs[0].value = v;
-            node.isDirty = true;
-            changed = true;
+        switch (pin.type) {
+            case domain::PinType::DOUBLE: {
+                double v = 0.0;
+                if (auto* pv = std::get_if<double>(&pin.value))
+                    v = *pv;
+                if (ImGui::InputDouble("##val", &v, 0.0, 0.0, "%.3f")) {
+                    pin.value = v;
+                    node.isDirty = true;
+                    changed = true;
+                }
+                break;
+            }
+            case domain::PinType::INT: {
+                int v = 0;
+                if (auto* pv = std::get_if<int>(&pin.value))
+                    v = *pv;
+                if (ImGui::InputInt("##val", &v)) {
+                    pin.value = v;
+                    node.isDirty = true;
+                    changed = true;
+                }
+                break;
+            }
+            case domain::PinType::BOOL: {
+                bool v = false;
+                if (auto* pv = std::get_if<bool>(&pin.value))
+                    v = *pv;
+                if (ImGui::Checkbox("##val", &v)) {
+                    pin.value = v;
+                    node.isDirty = true;
+                    changed = true;
+                }
+                break;
+            }
+            case domain::PinType::STRING: {
+                std::string v = "";
+                if (auto* pv = std::get_if<std::string>(&pin.value))
+                    v = *pv;
+                char buffer[256];
+                strncpy(buffer, v.c_str(), sizeof(buffer));
+                buffer[sizeof(buffer) - 1] = 0;
+                if (ImGui::InputText("##val", buffer, sizeof(buffer))) {
+                    pin.value = std::string(buffer);
+                    node.isDirty = true;
+                    changed = true;
+                }
+                break;
+            }
+            case domain::PinType::VEC3: {
+                glm::vec3 v(0.0f);
+                if (auto* pv = std::get_if<glm::vec3>(&pin.value))
+                    v = *pv;
+                float fv[3] = {v.x, v.y, v.z};
+                if (ImGui::InputFloat3("##val", fv, "%.3f")) {
+                    pin.value = glm::vec3(fv[0], fv[1], fv[2]);
+                    node.isDirty = true;
+                    changed = true;
+                }
+                break;
+            }
+            default:
+                ImGui::Text("???");
+                break;
         }
-        ImGui::PopItemWidth();
 
+        ImGui::PopItemWidth();
         ImNodes::EndOutputAttribute();
     } else {
         // ---------------------------------------------------------
