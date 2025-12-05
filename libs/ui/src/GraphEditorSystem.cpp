@@ -352,7 +352,7 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
             v = *pv;
 
         ImGui::PushItemWidth(80.0f);
-        if (ImGui::DragScalar("##val", ImGuiDataType_Double, &v, 0.1f)) {
+        if (ImGui::InputDouble("##val", &v, 0.0, 0.0, "%.3f")) { // Using 0.0 step for direct input, default format
             node.outputs[0].value = v;
             node.isDirty = true;
             changed = true;
