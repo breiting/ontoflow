@@ -99,9 +99,9 @@ void Editor::DrawUI() {
  */
 void Editor::Update(double dt) {
     if (m_NeedsEvaluation) {
-        if (m_BoxNodeID != INVALID_ENTITY) {
+        if (m_SinkNodeID != INVALID_ENTITY) {
             LOG(Info) << "Editor: Evaluating Dataflow Graph...";
-            m_Evaluator->Evaluate(m_BoxNodeID);
+            m_Evaluator->Evaluate(m_SinkNodeID);
             SyncMeshes();
         }
         m_NeedsEvaluation = false;
@@ -217,6 +217,7 @@ void Editor::InitializeDemoGraph() {
     LOG(Info) << "Evaluating Box Node...";
     evaluator.Evaluate(exportStl);
 
+    m_SinkNodeID = exportStl;
     m_NeedsEvaluation = true;
 }
 

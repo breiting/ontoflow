@@ -67,7 +67,7 @@ class Editor {
 
     // Graph demo nodes
     domain::Entity m_WidthNodeID = domain::INVALID_ENTITY;
-    domain::Entity m_BoxNodeID = domain::INVALID_ENTITY;
+    domain::Entity m_SinkNodeID = domain::INVALID_ENTITY;
 
     bool m_NeedsEvaluation = true;
 
