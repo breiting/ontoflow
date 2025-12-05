@@ -246,6 +246,11 @@ void Window::InitCallbacks() {
             self->m_WindowSizeCallback(width, height);
         }
     });
+
+    // Char callback (Required for ImGui text input)
+    glfwSetCharCallback(m_Window, [](GLFWwindow* w, unsigned int c) {
+        ImGui_ImplGlfw_CharCallback(w, c);
+    });
 }
 
 /**
