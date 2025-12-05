@@ -16,9 +16,9 @@ void RegisterMathNodes() {
     NodeDefinition addDef;
     addDef.name = "Add";
     addDef.category = "Math";
-    addDef.inputs.push_back(Pin{"A", PinType::FLOAT});
-    addDef.inputs.push_back(Pin{"B", PinType::FLOAT});
-    addDef.outputs.push_back(Pin{"Result", PinType::FLOAT});
+    addDef.inputs.push_back(Pin{"A", PinType::DOUBLE});
+    addDef.inputs.push_back(Pin{"B", PinType::DOUBLE});
+    addDef.outputs.push_back(Pin{"Result", PinType::DOUBLE});
 
     addDef.compute = [](NodeComponent& node, Registry&) {
         double a = 0.0;

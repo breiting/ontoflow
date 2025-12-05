@@ -16,7 +16,7 @@ class EngineTest : public ::testing::Test {
         NodeDefinition valueNode;
         valueNode.name = "Value";
         valueNode.category = "Math";
-        valueNode.outputs.push_back(Pin{"Out", PinType::FLOAT, std::monostate{}, {}});
+        valueNode.outputs.push_back(Pin{"Out", PinType::DOUBLE, std::monostate{}, {}});
         valueNode.compute = [](NodeComponent&, Registry&) {
             // Passthrough
         };
@@ -26,9 +26,9 @@ class EngineTest : public ::testing::Test {
         NodeDefinition addNode;
         addNode.name = "Add";
         addNode.category = "Math";
-        addNode.inputs.push_back(Pin{"A", PinType::FLOAT, std::monostate{}, {}});
-        addNode.inputs.push_back(Pin{"B", PinType::FLOAT, std::monostate{}, {}});
-        addNode.outputs.push_back(Pin{"Result", PinType::FLOAT, std::monostate{}, {}});
+        addNode.inputs.push_back(Pin{"A", PinType::DOUBLE, std::monostate{}, {}});
+        addNode.inputs.push_back(Pin{"B", PinType::DOUBLE, std::monostate{}, {}});
+        addNode.outputs.push_back(Pin{"Result", PinType::DOUBLE, std::monostate{}, {}});
         addNode.compute = [](NodeComponent& node, Registry&) {
             double a = 0.0;
             double b = 0.0;

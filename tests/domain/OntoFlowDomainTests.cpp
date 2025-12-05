@@ -8,7 +8,7 @@ using namespace of::domain;
 
 TEST(OntoFlowDomain, PinVariantTest) {
     Pin p;
-    p.type = PinType::FLOAT;
+    p.type = PinType::DOUBLE;
     p.value = 3.14;
 
     ASSERT_TRUE(std::holds_alternative<double>(p.value));
@@ -19,8 +19,8 @@ TEST(OntoFlowDomain, NodeComponentTest) {
     NodeComponent node;
     node.definitionID = "TEST_OP";
 
-    node.inputs.push_back(Pin{"In1", of::domain::PinType::FLOAT, 0.0f, {}});
-    node.inputs.push_back(Pin{"In2", of::domain::PinType::FLOAT, 0.0f, {}});
+    node.inputs.push_back(Pin{"In1", of::domain::PinType::DOUBLE, 0.0f, {}});
+    node.inputs.push_back(Pin{"In2", of::domain::PinType::DOUBLE, 0.0f, {}});
 
     EXPECT_EQ(node.inputs.size(), 2);
 }

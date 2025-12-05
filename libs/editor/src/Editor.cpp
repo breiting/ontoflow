@@ -5,13 +5,14 @@
 #include <ontoflow/domain/Components.hpp>
 #include <ontoflow/domain/NodeData.hpp>
 #include <ontoflow/editor/Editor.hpp>
+#include <ontoflow/editor/IViewportRenderer.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
-
-#include "ontoflow/editor/IViewportRenderer.hpp"
+#include <ontoflow/nodes/StandardLibrary.hpp>
 
 using namespace of::domain;
 using namespace of::engine;
 using namespace of::ui;
+using namespace of::nodes;
 
 namespace of::editor {
 
@@ -180,76 +181,41 @@ void Editor::HandleKey(const KeyEvent& key) {
  * @brief Build a simple demonstration graph (Value → Box).
  */
 void Editor::InitializeDemoGraph() {
-    auto& reg = m_Registry;
-    auto& nodeReg = NodeRegistry::Instance();
+    auto& registry = m_Registry;
     auto& backend = m_GeometrySystem.GetBackend();
 
-    // -------------------------
-    // Register VALUE node
-    // -------------------------
-    NodeDefinition valDef;
-    valDef.name = "Value (Float)";
-    valDef.outputs.push_back(Pin{"Out", PinType::FLOAT, 0.0, {}});
-    valDef.compute = [](NodeComponent&, Registry&) {
-    };
-    nodeReg.RegisterNode("VALUE_FLOAT", valDef);
+    GraphEvaluator evaluator(registry);
 
-    // -------------------------
-    // Register BOX node
-    // -------------------------
-    NodeDefinition boxDef;
-    boxDef.name = "Box";
-    boxDef.inputs.emplace_back("Width", PinType::FLOAT, 1.0, Connection{});
-    boxDef.inputs.emplace_back("Length", PinType::FLOAT, 1.0, Connection{});
-    boxDef.inputs.emplace_back("Height", PinType::FLOAT, 1.0, Connection{});
-    boxDef.outputs.emplace_back("Shape", PinType::GEOMETRY, PinValue{}, Connection{});
+    StandardLibrary::RegisterAll(backend);
 
-    boxDef.compute = [&backend](NodeComponent& node, Registry& r) {
-        double w = std::get<double>(node.inputs[0].value);
-        double l = std::get<double>(node.inputs[1].value);
-        double h = std::get<double>(node.inputs[2].value);
+    // 1. Spawn Nodes
+    Entity width = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity length = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity height = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity box = NodeRegistry::Instance().SpawnNode(registry, "GEOM_BOX");
+    Entity deflection = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
+    Entity filename = NodeRegistry::Instance().SpawnNode(registry, "STRING_VALUE");
+    Entity exportStl = NodeRegistry::Instance().SpawnNode(registry, "SINK_SAVE_STL");
 
-        auto shape = backend.CreateBox(w, l, h);
+    // 2. Set Values
+    registry.GetComponent<NodeComponent>(width)->outputs[0].value = 5.0;
+    registry.GetComponent<NodeComponent>(length)->outputs[0].value = 3.0;
+    registry.GetComponent<NodeComponent>(height)->outputs[0].value = 2.0;
 
-        // GeometryHandle output reuse
-        if (auto* gh = std::get_if<GeometryHandle>(&node.outputs[0].value)) {
-            if (gh->IsValid()) {
-                auto ent = gh->id;
-                if (auto* comp = r.GetComponent<BodyComponent>(ent))
-                    comp->handle = shape;
-                return;
-            }
-        }
+    // 3. Connect
+    auto* boxNode = registry.GetComponent<NodeComponent>(box);
+    boxNode->inputs[0].connection = {width, 0};
+    boxNode->inputs[1].connection = {length, 0};
+    boxNode->inputs[2].connection = {height, 0};
 
-        // Create new body
-        Entity newBody = r.CreateEntity();
-        r.AddComponent(newBody, BodyComponent{shape});
-        r.AddComponent(newBody, NameComponent{"Box_Body"});
+    auto* exportNode = registry.GetComponent<NodeComponent>(exportStl);
+    exportNode->inputs[0].connection = {filename, 0};
+    exportNode->inputs[1].connection = {deflection, 0};
+    exportNode->inputs[2].connection = {box, 0};
 
-        node.outputs[0].value = GeometryHandle{newBody};
-    };
-
-    nodeReg.RegisterNode("GEOM_BOX", boxDef);
-
-    // -------------------------
-    // Create the graph
-    // -------------------------
-    m_WidthNodeID = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
-    auto nLength = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
-    auto nHeight = nodeReg.SpawnNode(reg, "VALUE_FLOAT");
-
-    m_BoxNodeID = nodeReg.SpawnNode(reg, "GEOM_BOX");
-
-    // Assign values
-    reg.GetComponent<NodeComponent>(m_WidthNodeID)->outputs[0].value = 2.0;
-    reg.GetComponent<NodeComponent>(nLength)->outputs[0].value = 3.0;
-    reg.GetComponent<NodeComponent>(nHeight)->outputs[0].value = 4.0;
-
-    // Connect
-    auto* boxNode = reg.GetComponent<NodeComponent>(m_BoxNodeID);
-    boxNode->inputs[0].connection = {m_WidthNodeID, 0};
-    boxNode->inputs[1].connection = {nLength, 0};
-    boxNode->inputs[2].connection = {nHeight, 0};
+    // 4. Evaluate
+    LOG(Info) << "Evaluating Box Node...";
+    evaluator.Evaluate(exportStl);
 
     m_NeedsEvaluation = true;
 }

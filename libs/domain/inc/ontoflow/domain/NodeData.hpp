@@ -8,10 +8,11 @@
 namespace of::domain {
 
 enum class PinType {
-    FLOAT,
+    DOUBLE,
     INT,
     BOOL,
     VEC3,
+    STRING,
     GEOMETRY,
     ANY
 };
@@ -34,7 +35,15 @@ struct GeometryHandle {
 };
 
 // The Data flowing through the graph
-using PinValue = std::variant<double, int, bool, glm::vec3, GeometryHandle, std::monostate>;
+using PinValue = std::variant<  //
+    double,                     ///< DOUBLE
+    int,                        ///< INT
+    bool,                       ///< BOOL
+    glm::vec3,                  ///< VEC3
+    std::string,                ///< STRING
+    GeometryHandle,             ///< GEOMETRY
+    std::monostate              ///< ANY
+    >;
 
 // The Edge E = (TargetNode, TargetPin)
 struct Connection {
@@ -45,7 +54,7 @@ struct Connection {
 // The Pin (Input or Output slot)
 struct Pin {
     std::string name;
-    PinType type = PinType::FLOAT;
+    PinType type = PinType::DOUBLE;
     PinValue value;         // Static data or Cache
     Connection connection;  // Topology (Input only)
 
