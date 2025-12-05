@@ -110,12 +110,28 @@ void Editor::HandleAction(EditorAction action) {
 
 void Editor::Update(double dt) {
     if (m_NeedsEvaluation) {
-        if (m_SinkNodeID != INVALID_ENTITY) {
-            LOG(Info) << "Editor: Evaluating Dataflow Graph...";
-            m_Evaluator->Evaluate(m_SinkNodeID);
+        LOG(Info) << "Editor: Evaluating Dataflow Graph...";
+
+        bool anyEvaluated = false;
+        auto nodeEntities = m_Registry.GetEntitiesWith<NodeComponent>();
+
+        for (auto e : nodeEntities) {
+            auto* node = m_Registry.GetComponent<NodeComponent>(e);
+            // Identify Sink Nodes: Nodes with NO outputs.
+            // We evaluate them, which pulls data from upstream.
+            if (node && node->outputs.empty()) {
+                m_Evaluator->Evaluate(e);
+                anyEvaluated = true;
+            }
+        }
+
+        if (anyEvaluated) {
             SyncMeshes();
             m_StatusBar.ShowMessage("Graph Evaluated");
+        } else {
+            m_StatusBar.ShowMessage("No Sink Nodes found");
         }
+
         m_NeedsEvaluation = false;
     }
 

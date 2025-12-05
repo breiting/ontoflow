@@ -73,10 +73,6 @@ class Editor {
     // Cameras & Tools
     ViewController m_ViewController;
 
-    // Graph demo nodes
-    domain::Entity m_WidthNodeID = domain::INVALID_ENTITY;
-    domain::Entity m_SinkNodeID = domain::INVALID_ENTITY;
-
     bool m_NeedsEvaluation = true;
 
     // Minimal shortcut system (kept as-is)
