@@ -5,6 +5,7 @@ add_library(ontoflow_editor STATIC
 
 target_include_directories(ontoflow_editor PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/inc
+	${CMAKE_CURRENT_SOURCE_DIR}/../../extern
 )
 
 target_link_libraries(ontoflow_editor

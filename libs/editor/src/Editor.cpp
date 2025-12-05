@@ -1,16 +1,15 @@
 #include <imgui.h>
 #include <imnodes.h>
+#include <roboto_regular.h>
 
 #include <ontoflow/core/Logger.hpp>
 #include <ontoflow/domain/Components.hpp>
 #include <ontoflow/domain/NodeData.hpp>
 #include <ontoflow/editor/Editor.hpp>
 #include <ontoflow/editor/IViewportRenderer.hpp>
+#include <ontoflow/engine/GraphSerializer.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
 #include <ontoflow/nodes/StandardLibrary.hpp>
-
-// Relative path to extern as libs/editor doesn't include it in CMake
-#include "../../../../extern/roboto_regular.h"
 
 using namespace of::domain;
 using namespace of::engine;
@@ -24,13 +23,12 @@ Editor::Editor(domain::Registry& registry, domain::GeometrySystem& geometrySyste
       m_GeometrySystem(geometrySystem),
       m_Renderer(renderer),
       m_NodeEditorRegistry(m_UiAllocator) {
-    
     // ImNodes Context
     ImNodes::CreateContext();
-    
+
     // Initialize Engine Systems
     m_Evaluator = std::make_unique<GraphEvaluator>(m_Registry);
-    
+
     // Initialize UI Systems
     m_GraphEditorSystem = std::make_unique<GraphEditorSystem>(m_Registry, m_NodeEditorRegistry);
 
@@ -81,20 +79,32 @@ void Editor::DrawUI() {
 }
 
 void Editor::HandleAction(EditorAction action) {
+    GraphSerializer gs(m_Registry);
     switch (action) {
         case EditorAction::Evaluate:
             ExecuteCommand(":evaluate");
             break;
+        case EditorAction::Save: {
+            GraphDocument doc = gs.CaptureGraph();
+            gs.SaveToFile("graph.json", doc);
+            break;
+        }
+        case EditorAction::Load: {
+            auto doc = gs.LoadFromFile("graph.json");
+            if (doc)
+                gs.ApplyGraph(doc.value());
+            break;
+        }
         case EditorAction::Clear:
-             // TODO: Implement Clear
-             m_StatusBar.ShowMessage("Clear not implemented");
-             break;
+            // TODO: Implement Clear
+            m_StatusBar.ShowMessage("Clear not implemented");
+            break;
         case EditorAction::Dump:
-             m_Registry.Dump();
-             m_StatusBar.ShowMessage("Registry dumped to log");
-             break;
+            m_Registry.Dump();
+            m_StatusBar.ShowMessage("Registry dumped to log");
+            break;
         default:
-             break;
+            break;
     }
 }
 
@@ -118,22 +128,19 @@ void Editor::ExecuteCommand(const std::string& cmd) {
     if (cmd == ":box") {
         auto e = NodeRegistry::Instance().SpawnNode(m_Registry, "GEOM_BOX");
         if (auto* node = m_Registry.GetComponent<NodeComponent>(e)) {
-             node->ui = {0.0f, 0.0f};
+            node->ui = {0.0f, 0.0f};
         }
         m_StatusBar.ShowMessage("Spawned Box");
-    } 
-    else if (cmd == ":val") {
+    } else if (cmd == ":val") {
         auto e = NodeRegistry::Instance().SpawnNode(m_Registry, "FLOAT_VALUE");
         if (auto* node = m_Registry.GetComponent<NodeComponent>(e)) {
-             node->ui = {0.0f, 0.0f};
+            node->ui = {0.0f, 0.0f};
         }
-         m_StatusBar.ShowMessage("Spawned Value");
-    }
-    else if (cmd == ":evaluate") {
+        m_StatusBar.ShowMessage("Spawned Value");
+    } else if (cmd == ":evaluate") {
         m_NeedsEvaluation = true;
-         m_StatusBar.ShowMessage("Evaluation Queued...");
-    }
-    else if (cmd == ":view") {
+        m_StatusBar.ShowMessage("Evaluation Queued...");
+    } else if (cmd == ":view") {
         m_ShowRenderWindow = !m_ShowRenderWindow;
     }
 }
@@ -164,7 +171,7 @@ void Editor::OnInput(const InputEvent& ev) {
 void Editor::HandleKey(const KeyEvent& key) {
     if (!key.pressed)
         return;
-    
+
     // Shortcuts
     if (key.text == 'e') {
         m_NeedsEvaluation = true;
