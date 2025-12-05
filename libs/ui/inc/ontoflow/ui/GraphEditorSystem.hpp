@@ -10,9 +10,19 @@
 #include <imgui.h>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/ui/NodeEditorRegistry.hpp>
+#include <ontoflow/ui/StatusBar.hpp>
 #include <string>
 
 namespace of::ui {
+
+enum class EditorAction {
+    None,
+    Evaluate,
+    Save,
+    Load,
+    Clear,
+    Dump
+};
 
 /**
  * @class GraphEditorSystem
@@ -25,19 +35,14 @@ class GraphEditorSystem {
 
     /**
      * @brief Draws the full editor layout including Toolbar, Node Library, and Graph.
-     * @param onCommandCallback Function to execute when a command is submitted.
+     * @param statusBar Reference to the StatusBar instance to draw.
+     * @return The action triggered by the toolbar.
      */
-    void DrawLayout(std::function<void(const std::string&)> onCommandCallback);
-
-    void RequestCommandFocus() {
-        m_FocusCommand = true;
-    }
+    EditorAction DrawLayout(StatusBar& statusBar);
 
    private:
-    void DrawToolbar();
+    EditorAction DrawToolbar();
     void DrawNodeLibrary();
-    void DrawStatusBar();
-    void DrawCommandPalette(std::function<void(const std::string&)> onCommandCallback);
     void ApplyTheme();
 
     bool DrawNodeEditorInternal();
@@ -52,9 +57,6 @@ class GraphEditorSystem {
 
     glm::vec2 m_SpawnPos{0.f, 0.f};
     ImGuiTextFilter m_NodeFilter;
-    char m_CommandBuffer[256] = "";
-    bool m_FocusCommand = false;
-    std::string m_LastStatusMessage = "Ready";
 };
 
 }  // namespace of::ui

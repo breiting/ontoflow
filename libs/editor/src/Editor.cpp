@@ -43,35 +43,20 @@ Editor::~Editor() {
 
 void Editor::Initialize() {
     // Load Fonts
-    // We use AddFontFromMemoryTTF because the header contains raw TTF data, not compressed.
     ImGuiIO& io = ImGui::GetIO();
     ImFontConfig cfg;
-    cfg.FontDataOwnedByAtlas = false; // The data is const static, no need to copy/free
+    cfg.FontDataOwnedByAtlas = false;
     io.Fonts->AddFontFromMemoryTTF((void*)g_RobotoRegular, sizeof(g_RobotoRegular), 16.0f, &cfg);
-    
-    // Note: Theme is applied by GraphEditorSystem constructor
 }
 
 void Editor::DrawUI() {
-    // We don't create a window here anymore, we let GraphEditorSystem handle the layout
-    // into the main viewport.
-    
     if (m_GraphEditorSystem) {
-        m_GraphEditorSystem->DrawLayout([this](const std::string& cmd) {
-            ExecuteCommand(cmd);
-        });
+        EditorAction action = m_GraphEditorSystem->DrawLayout(m_StatusBar);
+        if (action != EditorAction::None) {
+            HandleAction(action);
+        }
     }
 
-    // Render Window (Overlay or separate?)
-    // The layout task specified full screen layout. 
-    // If we want to see the 3D view, we might need a specific node or toggle.
-    // Existing code had m_ShowRenderWindow. Let's keep it optional or integrate it?
-    // The task didn't specify where the 3D view goes. 
-    // But "GraphEditorSystem" takes the center.
-    // Maybe we can make the "Graph" panel switchable to "Viewport".
-    // For now, let's keep the 3D view as a separate window if enabled, 
-    // but strictly following the layout, it might overlap.
-    
     if (m_ShowRenderWindow) {
         if (ImGui::Begin("3D View")) {
             ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -95,12 +80,31 @@ void Editor::DrawUI() {
     }
 }
 
+void Editor::HandleAction(EditorAction action) {
+    switch (action) {
+        case EditorAction::Evaluate:
+            ExecuteCommand(":evaluate");
+            break;
+        case EditorAction::Clear:
+             // TODO: Implement Clear
+             m_StatusBar.ShowMessage("Clear not implemented");
+             break;
+        case EditorAction::Dump:
+             m_Registry.Dump();
+             m_StatusBar.ShowMessage("Registry dumped to log");
+             break;
+        default:
+             break;
+    }
+}
+
 void Editor::Update(double dt) {
     if (m_NeedsEvaluation) {
         if (m_SinkNodeID != INVALID_ENTITY) {
             LOG(Info) << "Editor: Evaluating Dataflow Graph...";
             m_Evaluator->Evaluate(m_SinkNodeID);
             SyncMeshes();
+            m_StatusBar.ShowMessage("Graph Evaluated");
         }
         m_NeedsEvaluation = false;
     }
@@ -112,28 +116,22 @@ void Editor::ExecuteCommand(const std::string& cmd) {
     LOG(Info) << "Command: " << cmd;
 
     if (cmd == ":box") {
-        // Spawn Box
         auto e = NodeRegistry::Instance().SpawnNode(m_Registry, "GEOM_BOX");
-        // Place it near center? GraphEditorSystem handles placement via "SpawnPos" logic usually,
-        // but here we might just let it be at 0,0 or update position.
-        // We can access internal registry to move it?
-        // The UI system syncs position from component.
         if (auto* node = m_Registry.GetComponent<NodeComponent>(e)) {
-             node->ui = {0.0f, 0.0f}; // Reset to center
+             node->ui = {0.0f, 0.0f};
         }
+        m_StatusBar.ShowMessage("Spawned Box");
     } 
     else if (cmd == ":val") {
         auto e = NodeRegistry::Instance().SpawnNode(m_Registry, "FLOAT_VALUE");
         if (auto* node = m_Registry.GetComponent<NodeComponent>(e)) {
              node->ui = {0.0f, 0.0f};
         }
+         m_StatusBar.ShowMessage("Spawned Value");
     }
     else if (cmd == ":evaluate") {
         m_NeedsEvaluation = true;
-    }
-    else if (cmd == ":clear") {
-         // Basic clear?
-         // m_Registry.Clear(); // Logic to clear nodes
+         m_StatusBar.ShowMessage("Evaluation Queued...");
     }
     else if (cmd == ":view") {
         m_ShowRenderWindow = !m_ShowRenderWindow;
@@ -166,10 +164,10 @@ void Editor::OnInput(const InputEvent& ev) {
 void Editor::HandleKey(const KeyEvent& key) {
     if (!key.pressed)
         return;
-        
-    // Shortcuts can still work
-    if (key.text == ':' && m_GraphEditorSystem) {
-        m_GraphEditorSystem->RequestCommandFocus();
+    
+    // Shortcuts
+    if (key.text == 'e') {
+        m_NeedsEvaluation = true;
     }
 }
 

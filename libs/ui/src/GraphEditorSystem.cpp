@@ -83,7 +83,7 @@ glm::vec2 GraphEditorSystem::GetMouseGridPos() const {
     return {local.x, local.y};
 }
 
-void GraphEditorSystem::DrawLayout(std::function<void(const std::string&)> onCommandCallback) {
+EditorAction GraphEditorSystem::DrawLayout(StatusBar& statusBar) {
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImVec2 workPos = viewport->WorkPos;
     ImVec2 workSize = viewport->WorkSize;
@@ -91,77 +91,84 @@ void GraphEditorSystem::DrawLayout(std::function<void(const std::string&)> onCom
     // Fixed dimensions
     const float toolbarWidth = 64.0f;
     const float libraryWidth = 250.0f;
-    const float bottomHeight = 30.0f;
+    const float bottomHeight = 40.0f; // Increased height
     const float centerWidth = workSize.x - toolbarWidth - libraryWidth;
     const float centerHeight = workSize.y - bottomHeight;
 
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
                                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                   ImGuiWindowFlags_NoBringToFrontOnFocus;
+                                   ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking;
+
+    EditorAction action = EditorAction::None;
 
     // 1. Left Toolbar
-    ImGui::SetNextWindowPos({workPos.x, workPos.y});
-    ImGui::SetNextWindowSize({toolbarWidth, centerHeight});
+    ImGui::SetNextWindowPos({workPos.x, workPos.y}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({toolbarWidth, centerHeight}, ImGuiCond_Always);
     if (ImGui::Begin("Toolbar", nullptr, windowFlags)) {
-        DrawToolbar();
+        action = DrawToolbar();
     }
     ImGui::End();
 
     // 2. Right Library
-    ImGui::SetNextWindowPos({workPos.x + workSize.x - libraryWidth, workPos.y});
-    ImGui::SetNextWindowSize({libraryWidth, centerHeight});
+    ImGui::SetNextWindowPos({workPos.x + workSize.x - libraryWidth, workPos.y}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({libraryWidth, centerHeight}, ImGuiCond_Always);
     if (ImGui::Begin("Library", nullptr, windowFlags)) {
         DrawNodeLibrary();
     }
     ImGui::End();
 
-    // 3. Bottom Status
-    ImGui::SetNextWindowPos({workPos.x, workPos.y + centerHeight});
-    ImGui::SetNextWindowSize({workSize.x, bottomHeight});
-    // Use a distinct color for status bar
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(46, 52, 64, 255)); // Nord0
-    if (ImGui::Begin("StatusBar", nullptr, windowFlags)) {
-        DrawStatusBar();
-        DrawCommandPalette(onCommandCallback);
-    }
-    ImGui::End();
-    ImGui::PopStyleColor();
-
-    // 4. Center Graph
-    ImGui::SetNextWindowPos({workPos.x + toolbarWidth, workPos.y});
-    ImGui::SetNextWindowSize({centerWidth, centerHeight});
-    // The Graph window is just a container for ImNodes
+    // 3. Center Graph (Drawn before Status Bar to act as background)
+    ImGui::SetNextWindowPos({workPos.x + toolbarWidth, workPos.y}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({centerWidth, centerHeight}, ImGuiCond_Always);
     if (ImGui::Begin("GraphRegion", nullptr, windowFlags)) {
         DrawNodeEditorInternal();
     }
     ImGui::End();
+
+    // 4. Bottom Status (Drawn last to stay on top)
+    ImGui::SetNextWindowPos({workPos.x, workPos.y + centerHeight}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({workSize.x, bottomHeight}, ImGuiCond_Always);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(46, 52, 64, 255)); // Nord0
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 8.0f)); // Adjusted padding
+    if (ImGui::Begin("StatusBar", nullptr, windowFlags | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+        statusBar.Draw(ImGui::GetIO().DeltaTime);
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+
+    return action;
 }
 
-void GraphEditorSystem::DrawToolbar() {
+EditorAction GraphEditorSystem::DrawToolbar() {
     ImVec2 btnSize(40, 40);
     float availX = ImGui::GetContentRegionAvail().x;
     float offsetX = (availX - btnSize.x) * 0.5f;
 
-    auto toolBtn = [&](const char* label) {
+    auto toolBtn = [&](const char* label, EditorAction act) -> bool {
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-        if (ImGui::Button(label, btnSize)) {
-            // Todo: Actions
-        }
+        bool clicked = ImGui::Button(label, btnSize);
         ImGui::Dummy(ImVec2(0, 10));
+        return clicked;
     };
 
+    EditorAction result = EditorAction::None;
+
     ImGui::Dummy(ImVec2(0, 10));
-    toolBtn("[+]"); // New
-    toolBtn("[S]"); // Save
-    toolBtn("[L]"); // Load
-    toolBtn("[C]"); // Clear
+    if (toolBtn("[+]", EditorAction::None)) { /* New */ }
+    if (toolBtn("[S]", EditorAction::Save)) result = EditorAction::Save;
+    if (toolBtn("[L]", EditorAction::Load)) result = EditorAction::Load;
+    if (toolBtn("[C]", EditorAction::Clear)) result = EditorAction::Clear;
 
     // Spacer
     ImGui::Dummy(ImVec2(0, 20));
-    ImGui::Separator();
+    ImGui::TextDisabled("|");
     ImGui::Dummy(ImVec2(0, 20));
 
-    toolBtn("[D]"); // Debug/Dump
+    if (toolBtn("[E]", EditorAction::Evaluate)) result = EditorAction::Evaluate;
+    if (toolBtn("[D]", EditorAction::Dump)) result = EditorAction::Dump;
+    
+    return result;
 }
 
 void GraphEditorSystem::DrawNodeLibrary() {
@@ -169,17 +176,11 @@ void GraphEditorSystem::DrawNodeLibrary() {
     ImGui::Separator();
     ImGui::Dummy(ImVec2(0, 5));
 
-    // Search
     m_NodeFilter.Draw("##Search", ImGui::GetContentRegionAvail().x);
     ImGui::Dummy(ImVec2(0, 10));
 
     const auto& defs = engine::NodeRegistry::Instance().GetDefinitions();
     
-    // Group by category
-    // Simplification: Just iterate and maybe sort by category or use header per category
-    // For now, just list them, or check category string. 
-    
-    // Let's collect categories first
     std::map<std::string, std::vector<const engine::NodeDefinition*>> categorized;
     for(const auto& [id, def] : defs) {
         if (m_NodeFilter.PassFilter(def.name.c_str())) {
@@ -191,15 +192,9 @@ void GraphEditorSystem::DrawNodeLibrary() {
         if (ImGui::CollapsingHeader(cat.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
             for (const auto* def : nodes) {
                 ImGui::PushID(def);
-                // Draggable Button
                 ImGui::Button(def->name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0));
                 
-                // Drag Source
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-                     // Pass the ID string as payload
-                    // Find the ID for this def (a bit inefficient reverse lookup, but registry is small)
-                    // Better: store ID in NodeDefinition? Or change map iteration.
-                    // Let's find the ID.
                     std::string opID;
                     for(const auto& [k, v] : defs) {
                         if (&v == def) { opID = k; break; }
@@ -209,41 +204,9 @@ void GraphEditorSystem::DrawNodeLibrary() {
                     ImGui::Text("Spawn %s", def->name.c_str());
                     ImGui::EndDragDropSource();
                 }
-
                 ImGui::PopID();
             }
         }
-    }
-}
-
-void GraphEditorSystem::DrawStatusBar() {
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextColored(ImVec4(0.5f, 0.7f, 0.5f, 1.0f), "Status: %s", m_LastStatusMessage.c_str());
-    ImGui::SameLine();
-    ImGui::TextDisabled("|");
-    ImGui::SameLine();
-}
-
-void GraphEditorSystem::DrawCommandPalette(std::function<void(const std::string&)> onCommandCallback) {
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-    
-    // Focus check
-    if (m_FocusCommand) {
-        ImGui::SetKeyboardFocusHere();
-        m_FocusCommand = false;
-    }
-
-    ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
-    if (ImGui::InputText("##Command", m_CommandBuffer, IM_ARRAYSIZE(m_CommandBuffer), flags)) {
-        std::string cmd = m_CommandBuffer;
-        if (!cmd.empty() && onCommandCallback) {
-            onCommandCallback(cmd);
-            m_LastStatusMessage = "Executed: " + cmd;
-        }
-        // Clear
-        m_CommandBuffer[0] = '\0';
-        // Keep focus
-        m_FocusCommand = true;
     }
 }
 
@@ -294,18 +257,16 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
             glm::vec2 mPos = GetMouseGridPos();
             auto newNode = engine::NodeRegistry::Instance().SpawnNode(m_Registry, opID);
             ImNodes::SetNodeGridSpacePos(m_EditorReg.GetNodeId(newNode), ImVec2(mPos.x, mPos.y));
-            m_LastStatusMessage = "Spawned " + opID;
         }
         ImGui::EndDragDropTarget();
     }
 
-    // ----------------- LINK CREATION/DELETION ----------------
+    // ----------------- LINK CREATION ----------------
     int startPin, endPin;
     if (ImNodes::IsLinkCreated(&startPin, &endPin)) {
         auto outPin = m_EditorReg.DecodePin(startPin);
         auto inPin = m_EditorReg.DecodePin(endPin);
 
-        // Ensure strict Direction (Output -> Input)
         if (outPin.isOutput && !inPin.isOutput) {
             auto* target = m_Registry.GetComponent<domain::NodeComponent>(inPin.node);
             target->inputs[inPin.pinIndex].connection = {outPin.node, outPin.pinIndex};
@@ -313,7 +274,9 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
             graphChanged = true;
         }
     }
-
+    
+    // ----------------- LINK DELETION ----------------
+    // 1. Dropped in void
     int destroyedLink;
     if (ImNodes::IsLinkDestroyed(&destroyedLink)) {
         auto [node, pin] = m_EditorReg.DecodeLink(destroyedLink);
@@ -321,6 +284,22 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
             comp->inputs[pin].connection = {};
             comp->isDirty = true;
             graphChanged = true;
+        }
+    }
+    
+    // 2. Explicit Deletion via DELETE key
+    const int numSelectedLinks = ImNodes::NumSelectedLinks();
+    if (numSelectedLinks > 0 && ImGui::IsKeyReleased(ImGuiKey_Delete)) {
+        std::vector<int> selectedLinks(numSelectedLinks);
+        ImNodes::GetSelectedLinks(selectedLinks.data());
+        
+        for (int linkId : selectedLinks) {
+            auto [node, pin] = m_EditorReg.DecodeLink(linkId);
+            if (auto* comp = m_Registry.GetComponent<domain::NodeComponent>(node)) {
+                comp->inputs[pin].connection = {};
+                comp->isDirty = true;
+                graphChanged = true;
+            }
         }
     }
 
@@ -333,8 +312,7 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     int uiNode = m_EditorReg.GetNodeId(e);
 
     const auto* def = engine::NodeRegistry::Instance().GetDefinition(node.definitionID);
-    const char* roleLabel = def ? def->category.c_str() : "Unknown";
-
+    
     std::string displayName;
     if (nameComp && !nameComp->name.empty())
         displayName = nameComp->name;
@@ -343,7 +321,6 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     else
         displayName = node.definitionID;
 
-    // First frame positioning
     if (node.ui.x >= 0 && node.ui.y >= 0 && !m_EditorReg.HasSeenNode(uiNode)) {
         ImNodes::SetNodeGridSpacePos(uiNode, {node.ui.x, node.ui.y});
         m_EditorReg.MarkNodeSeen(uiNode);
@@ -354,15 +331,12 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     // ---------------- HEADER ----------------
     ImNodes::BeginNodeTitleBar();
     ImGui::Text("%s", displayName.c_str());
-    ImGui::TextDisabled("ID: %u", e);
     ImNodes::EndNodeTitleBar();
 
-    // ---------------- ROLE SECTION ----------------
-    // DrawThinSeparator(); // Optional style choice
-    
-    // ---------------------------------------------------------
-    // VALUE-Float Node has special layout
-    // ---------------------------------------------------------
+    // Force a fixed width for the node
+    const float NODE_WIDTH = 200.0f;
+    ImGui::Dummy(ImVec2(NODE_WIDTH, 0.0f));
+
     bool isValueFloat =
         node.inputs.empty() && node.outputs.size() == 1 && node.outputs[0].type == domain::PinType::DOUBLE;
 
@@ -400,21 +374,32 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
         }
 
         // ---------------------------------------------------------
-        // OUTPUT PINS
+        // OUTPUT PINS (Right Aligned)
         // ---------------------------------------------------------
         for (size_t i = 0; i < node.outputs.size(); ++i) {
             auto& pin = node.outputs[i];
             int pinId = m_EditorReg.GetPinId(e, i, true);
 
             ImNodes::BeginOutputAttribute(pinId);
+            
+            // Use fixed width for alignment to avoid expansion loop
+            float textWidth = ImGui::CalcTextSize(pin.name.c_str()).x;
+            float spacing = ImGui::GetStyle().ItemSpacing.x;
+            
+            // Calculate offset based on the fixed width
+            float offsetX = NODE_WIDTH - textWidth - spacing;
+            
+            if (offsetX > 0) {
+                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+            }
             ImGui::Text("%s", pin.name.c_str());
+            
             ImNodes::EndOutputAttribute();
         }
     }
 
     ImNodes::EndNode();
 
-    // Sync UI position
     ImVec2 pos = ImNodes::GetNodeGridSpacePos(uiNode);
     node.ui = {pos.x, pos.y};
 
@@ -423,8 +408,6 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
 
 void GraphEditorSystem::DrawThinSeparator(float thickness) {
     ImVec2 min = ImGui::GetCursorScreenPos();
-    ImVec2 max = {min.x + ImGui::CalcTextSize("W").x * 4.0f, min.y + thickness};
-
     ImGui::GetWindowDrawList()->AddLine({min.x, min.y}, {min.x + 80.0f, min.y}, IM_COL32(150, 150, 150, 100),
                                         thickness);
     ImGui::Dummy({80.0f, thickness + 2.0f});
@@ -432,21 +415,11 @@ void GraphEditorSystem::DrawThinSeparator(float thickness) {
 
 void GraphEditorSystem::DumpNodePositions() const {
     LOG(Info) << "---- Node Positions ----";
-
     auto entities = m_Registry.GetEntitiesWith<domain::NodeComponent>();
     for (auto e : entities) {
         const auto* node = m_Registry.GetComponent<domain::NodeComponent>(e);
-        const auto* name = m_Registry.GetComponent<domain::NameComponent>(e);
-
-        if (!node)
-            continue;
-
-        std::string displayName = name ? name->name : "(unnamed)";
-
-        LOG(Info) << "Node ID=" << e << " Name=\"" << displayName << "\""
-                  << " Pos=(" << node->ui.x << ", " << node->ui.y << ")";
+        LOG(Info) << "Node ID=" << e << " Pos=(" << node->ui.x << ", " << node->ui.y << ")";
     }
-
     LOG(Info) << "------------------------";
 }
 

@@ -14,6 +14,7 @@
 #include <ontoflow/ui/GraphEditorSystem.hpp>
 #include <ontoflow/ui/NodeEditorRegistry.hpp>
 #include <ontoflow/ui/UiIdAllocator.hpp>
+#include <ontoflow/ui/StatusBar.hpp>
 #include <string>
 
 namespace of::editor {
@@ -37,7 +38,10 @@ class Editor {
     void Update(double dt);
 
     void Initialize();
+    
+    // Commands
     void ExecuteCommand(const std::string& cmd);
+    void HandleAction(ui::EditorAction action);
 
     void SetCamera2D(std::shared_ptr<ICamera> cam);
     void SetCamera3D(std::shared_ptr<ICamera> cam);
@@ -64,6 +68,7 @@ class Editor {
     ui::UiIdAllocator m_UiAllocator;
     ui::NodeEditorRegistry m_NodeEditorRegistry;
     std::unique_ptr<ui::GraphEditorSystem> m_GraphEditorSystem;
+    ui::StatusBar m_StatusBar;
 
     // Cameras & Tools
     ViewController m_ViewController;
