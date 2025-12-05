@@ -73,6 +73,8 @@ class Editor {
 
     // Minimal shortcut system (kept as-is)
     std::string m_CommandBuffer;
+
+    bool m_ShowRenderWindow{false};
 };
 
 }  // namespace of::editor

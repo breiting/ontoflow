@@ -67,30 +67,30 @@ void Editor::DrawUI() {
 
     ImGui::End();
 
-    // ----------------- 3D VIEWPORT WINDOW (floating/dockable) -----------------
-    // Später für Rendering nutzen, aktuell nur Dummy:
-    if (ImGui::Begin("3D View")) {
-        ImVec2 avail = ImGui::GetContentRegionAvail();
-        if (avail.x > 0.0f && avail.y > 0.0f) {
-            ImVec2 pos = ImGui::GetCursorScreenPos();
+    if (m_ShowRenderWindow) {
+        if (ImGui::Begin("3D View")) {
+            ImVec2 avail = ImGui::GetContentRegionAvail();
+            if (avail.x > 0.0f && avail.y > 0.0f) {
+                ImVec2 pos = ImGui::GetCursorScreenPos();
 
-            ImGui::InvisibleButton("##3DViewCanvas", avail);
+                ImGui::InvisibleButton("##3DViewCanvas", avail);
 
-            // Get FrameBuffer size
-            ImGuiIO& io = ImGui::GetIO();
-            const int fbHeight = static_cast<int>(io.DisplaySize.y);
+                // Get FrameBuffer size
+                ImGuiIO& io = ImGui::GetIO();
+                const int fbHeight = static_cast<int>(io.DisplaySize.y);
 
-            int x = (int)pos.x;
-            int y = fbHeight - (int)pos.y - (int)avail.y;  // Y-flip
-            int w = (int)avail.x;
-            int h = (int)avail.y;
+                int x = (int)pos.x;
+                int y = fbHeight - (int)pos.y - (int)avail.y;  // Y-flip
+                int w = (int)avail.x;
+                int h = (int)avail.y;
 
-            if (ICamera* cam = GetActiveCamera()) {
-                m_Renderer->Render(cam, {x, y, w, h});
+                if (ICamera* cam = GetActiveCamera()) {
+                    m_Renderer->Render(cam, {x, y, w, h});
+                }
             }
         }
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 /**
