@@ -7,6 +7,8 @@
 #include <ontoflow/editor/Editor.hpp>
 #include <ontoflow/engine/NodeRegistry.hpp>
 
+#include "ontoflow/editor/IViewportRenderer.hpp"
+
 using namespace of::domain;
 using namespace of::engine;
 using namespace of::ui;
@@ -16,8 +18,11 @@ namespace of::editor {
 /**
  * @brief Constructs the Editor. Initializes ImNodes and sets up graph systems.
  */
-Editor::Editor(domain::Registry& registry, domain::GeometrySystem& geometrySystem)
-    : m_Registry(registry), m_GeometrySystem(geometrySystem), m_NodeEditorRegistry(m_UiAllocator) {
+Editor::Editor(domain::Registry& registry, domain::GeometrySystem& geometrySystem, IViewportRenderer* renderer)
+    : m_Registry(registry),
+      m_GeometrySystem(geometrySystem),
+      m_Renderer(renderer),
+      m_NodeEditorRegistry(m_UiAllocator) {
     ImNodes::CreateContext();
     ImNodes::StyleColorsDark();
 
@@ -65,8 +70,25 @@ void Editor::DrawUI() {
     // ----------------- 3D VIEWPORT WINDOW (floating/dockable) -----------------
     // Später für Rendering nutzen, aktuell nur Dummy:
     if (ImGui::Begin("3D View")) {
-        ImGui::TextUnformatted("3D rendering will go here.");
-        // Hier später deinen Render-Target / OpenGL / ImGui-Image einbauen
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+        if (avail.x > 0.0f && avail.y > 0.0f) {
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+
+            ImGui::InvisibleButton("##3DViewCanvas", avail);
+
+            // Get FrameBuffer size
+            ImGuiIO& io = ImGui::GetIO();
+            const int fbHeight = static_cast<int>(io.DisplaySize.y);
+
+            int x = (int)pos.x;
+            int y = fbHeight - (int)pos.y - (int)avail.y;  // Y-flip
+            int w = (int)avail.x;
+            int h = (int)avail.y;
+
+            if (ICamera* cam = GetActiveCamera()) {
+                m_Renderer->Render(cam, {x, y, w, h});
+            }
+        }
     }
     ImGui::End();
 }

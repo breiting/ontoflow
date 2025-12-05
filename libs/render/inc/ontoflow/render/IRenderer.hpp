@@ -1,12 +1,13 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <ontoflow/render/Material.hpp>
 #include <memory>
+#include <ontoflow/editor/IViewportRenderer.hpp>
+#include <ontoflow/render/Material.hpp>
 
 namespace of::render {
 
-class BaseGeometry; // Forward declaration
-class Light; // Forward declaration
+class BaseGeometry;  // Forward declaration
+class Light;         // Forward declaration
 
 /**
  * \brief Interface for a generic 3D renderer.
@@ -24,10 +25,9 @@ class IRenderer {
 
     /**
      * \brief Sets the size of the rendering viewport.
-     * \param w Width of the viewport in pixels.
-     * \param h Height of the viewport in pixels.
+     * \param viewport
      */
-    virtual void SetViewportSize(int w, int h) = 0;
+    virtual void SetViewportSize(const editor::Viewport& viewport) = 0;
 
     /**
      * \brief Prepares the renderer for a new frame.

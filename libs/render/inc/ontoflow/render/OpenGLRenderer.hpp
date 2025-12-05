@@ -11,7 +11,7 @@ class OpenGLRenderer : public IRenderer {
     OpenGLRenderer();
     ~OpenGLRenderer();
 
-    void SetViewportSize(int w, int h) override;
+    void SetViewportSize(const editor::Viewport& viewport) override;
 
     void BeginFrame(const glm::mat4& view, const glm::mat4& proj, std::shared_ptr<Light> light) override;
     void EndFrame() override;

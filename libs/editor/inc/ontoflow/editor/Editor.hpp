@@ -8,6 +8,7 @@
 #include <memory>
 #include <ontoflow/domain/GeometrySystem.hpp>
 #include <ontoflow/domain/Registry.hpp>
+#include <ontoflow/editor/IViewportRenderer.hpp>
 #include <ontoflow/editor/ViewController.hpp>
 #include <ontoflow/engine/GraphEvaluator.hpp>
 #include <ontoflow/ui/GraphEditorSystem.hpp>
@@ -29,7 +30,7 @@ namespace of::editor {
  */
 class Editor {
    public:
-    Editor(domain::Registry& registry, domain::GeometrySystem& geometrySystem);
+    Editor(domain::Registry& registry, domain::GeometrySystem& geometrySystem, IViewportRenderer* renderer);
     ~Editor();
 
     void DrawUI();
@@ -51,6 +52,7 @@ class Editor {
    private:
     domain::Registry& m_Registry;
     domain::GeometrySystem& m_GeometrySystem;
+    IViewportRenderer* m_Renderer = nullptr;
 
     // --- Core systems ---
     std::unique_ptr<engine::GraphEvaluator> m_Evaluator;

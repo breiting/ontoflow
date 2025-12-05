@@ -24,9 +24,9 @@ OpenGLRenderer::~OpenGLRenderer() {
     glDisable(GL_DEPTH_TEST);
 }
 
-void OpenGLRenderer::SetViewportSize(int w, int h) {
-    LOG(Info) << "Setting viewport to " << w << "x" << h;
-    glViewport(0, 0, w, h);
+void OpenGLRenderer::SetViewportSize(const editor::Viewport& viewport) {
+    LOG(Info) << "Setting viewport to " << viewport.width << "x" << viewport.height;
+    glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
 }
 
 void OpenGLRenderer::ToggleWireframe() {

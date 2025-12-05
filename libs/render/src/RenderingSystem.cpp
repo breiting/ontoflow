@@ -35,8 +35,8 @@ RenderingSystem::RenderingSystem(std::unique_ptr<IRenderer> r) : m_Renderer(std:
  * \param w Width of the viewport in pixels.
  * \param h Height of the viewport in pixels.
  */
-void RenderingSystem::SetViewportSize(int w, int h) {
-    m_Renderer->SetViewportSize(w, h);
+void RenderingSystem::SetViewportSize(const Viewport& viewport) {
+    m_Renderer->SetViewportSize(viewport);
 }
 
 /**
@@ -106,6 +106,16 @@ void RenderingSystem::Update(Registry& registry) {
             }
         }
     }
+}
+
+void RenderingSystem::Render(editor::ICamera* cam, const Viewport& viewport) {
+    glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
+    // TODO: required?
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.1f, 0.1f, 0.12f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    Render(cam);
 }
 
 /**

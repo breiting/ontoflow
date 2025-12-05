@@ -2,7 +2,8 @@
 #include <memory>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/ICamera.hpp>
-#include <ontoflow/editor/ViewController.hpp>  // Not directly used in this header, but might be part of the concept
+#include <ontoflow/editor/IViewportRenderer.hpp>
+#include <ontoflow/editor/ViewController.hpp>
 #include <ontoflow/render/AxisRenderer.hpp>
 #include <ontoflow/render/DirectionalLight.hpp>
 #include <ontoflow/render/IRenderer.hpp>
@@ -21,7 +22,7 @@ namespace of::render {
  * and geometry (meshes, lines, points), updates them based on ECS changes,
  * and issues draw calls to the renderer.
  */
-class RenderingSystem {
+class RenderingSystem : public editor::IViewportRenderer {
    public:
     /**
      * \brief Constructs a RenderingSystem.
@@ -34,7 +35,7 @@ class RenderingSystem {
      * \param w Width of the viewport in pixels.
      * \param h Height of the viewport in pixels.
      */
-    void SetViewportSize(int w, int h);
+    void SetViewportSize(const editor::Viewport& viewport);
 
     /**
      * \brief Initializes the rendering system.
@@ -52,10 +53,17 @@ class RenderingSystem {
     void Update(domain::Registry& registry);
 
     /**
-     * \brief Renders the current scene.
+     * \brief Renders the current scene (full window)
      * \param cam A pointer to the active camera.
      */
     void Render(editor::ICamera* cam);
+
+    /**
+     * \brief Renders the current scene in a given viewport
+     * \param cam A pointer to the active camera.
+     * \param viewport The viewport to render in
+     */
+    void Render(editor::ICamera* cam, const editor::Viewport& viewport) override;
 
     /**
      * \brief Sets the visibility of the coordinate axis display.

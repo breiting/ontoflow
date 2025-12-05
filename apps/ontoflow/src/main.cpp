@@ -2,12 +2,17 @@
 #include <ontoflow/domain/GeometrySystem.hpp>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/editor/Editor.hpp>
+#include <ontoflow/render/OpenGLRenderer.hpp>
+#include <ontoflow/render/RenderingSystem.hpp>
 #include <ontoflow/ui/Window.hpp>
 
 #include "ontoflow/occt/OCCTBackend.hpp"
+#include "ontoflow/render/Camera2D.hpp"
+#include "ontoflow/render/Camera3D.hpp"
 
 using namespace of;
 using namespace of::editor;
+using namespace of::render;
 
 static KeyEvent MakeKeyEventFromGLFW(int key, int /*action*/, int mods) {
     using namespace of;
@@ -70,7 +75,19 @@ int main() {
     occt::OCCTBackend backend;
     domain::GeometrySystem geometrySystem(registry, backend);
 
-    editor::Editor editor(registry, geometrySystem);
+    // RenderingSystem (after Window initialization)
+    auto renderer = std::make_unique<OpenGLRenderer>();
+    RenderingSystem renderingSystem(std::move(renderer));
+    renderingSystem.Init(registry);
+    renderingSystem.SetShowAxis(true);
+
+    auto cam2D = std::make_shared<Camera2D>();
+    auto cam3D = std::make_shared<Camera3D>();
+
+    editor::Editor editor(registry, geometrySystem, &renderingSystem);
+
+    editor.SetCamera2D(cam2D);
+    editor.SetCamera3D(cam3D);
 
     // Demo nodes
     editor.InitializeDemoGraph();
