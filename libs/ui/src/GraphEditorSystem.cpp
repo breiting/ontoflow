@@ -131,6 +131,14 @@ EditorAction GraphEditorSystem::DrawLayout(StatusBar& statusBar) {
     ImGui::SetNextWindowSize({centerWidth, centerHeight}, ImGuiCond_Always);
     if (ImGui::Begin("GraphRegion", nullptr, windowFlags)) {
         DrawNodeEditorInternal();
+
+        // --- Draw Inspector (Modal) ---
+        // Drawing inside the window ensures ID stack consistency if OpenPopup was called here.
+        // Also ensures it renders on top of the node editor if handled correctly.
+        InspectorAction inspAction = m_Inspector.Draw(m_Registry);
+        if (inspAction == InspectorAction::Delete) {
+            DeleteNode(m_Inspector.GetTarget());
+        }
     }
     ImGui::End();
 
@@ -146,14 +154,6 @@ EditorAction GraphEditorSystem::DrawLayout(StatusBar& statusBar) {
     ImGui::End();
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
-
-    // --- Draw Inspector (Modal) ---
-    InspectorAction inspAction = m_Inspector.Draw(m_Registry);
-    if (inspAction == InspectorAction::Delete) {
-        DeleteNode(m_Inspector.GetTarget());
-    } else if (inspAction == InspectorAction::Save) {
-        // Saved automatically by inspector
-    }
 
     return action;
 }
