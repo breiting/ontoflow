@@ -17,6 +17,27 @@ enum class PinType {
     ANY
 };
 
+inline const char* PinToString(PinType t) {
+    switch (t) {
+        case PinType::DOUBLE:
+            return "Double";
+        case PinType::INT:
+            return "Int";
+        case PinType::BOOL:
+            return "Bool";
+        case PinType::VEC3:
+            return "Vec3";
+        case PinType::GEOMETRY:
+            return "Geometry";
+        case PinType::STRING:
+            return "String";
+        case PinType::ANY:
+            return "Any";
+        default:
+            return "Unknown";
+    }
+}
+
 // Wrapper to safely store Geometry References
 struct GeometryHandle {
     EntityID id{INVALID_ENTITY_ID};

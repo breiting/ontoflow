@@ -7,6 +7,7 @@
 #include <ontoflow/domain/Entity.hpp>
 #include <ontoflow/ui/UiIdAllocator.hpp>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace of::ui {
@@ -103,6 +104,9 @@ class NodeEditorRegistry {
      */
     std::pair<of::domain::Entity, std::size_t> DecodeLink(int uiLinkId) const;
 
+    bool HasSeenNode(int nodeId) const;
+    void MarkNodeSeen(int nodeId);
+
    private:
     UiIdAllocator& m_alloc;
 
@@ -117,6 +121,8 @@ class NodeEditorRegistry {
     // Links
     std::unordered_map<LinkKey, int, LinkKeyHash> m_linkToUi;
     std::unordered_map<int, LinkKey> m_uiToLink;
+
+    std::unordered_set<int> m_seenNodes;
 };
 
 }  // namespace of::ui

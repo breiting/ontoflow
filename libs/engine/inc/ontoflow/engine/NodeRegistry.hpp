@@ -44,9 +44,12 @@ class NodeRegistry {
      * @brief Spawns a node entity in the ECS registry.
      * @param registry The ECS registry.
      * @param opID The operation ID to spawn.
+     * @param name The custom name for this node
+     * @param ui The position in the node editor
      * @return The EntityID of the new node.
      */
-    domain::Entity SpawnNode(domain::Registry& registry, const std::string& opID);
+    domain::Entity SpawnNode(domain::Registry& registry, const std::string& opID, const std::string& name = "",
+                             const glm::vec2& ui = {0.0, 0.0});
 
     /**
      * @brief Retrieves a node definition.

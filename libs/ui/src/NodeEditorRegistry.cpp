@@ -91,4 +91,12 @@ std::pair<of::domain::Entity, std::size_t> NodeEditorRegistry::DecodeLink(int ui
     return {k.node, k.pinIndex};
 }
 
+bool NodeEditorRegistry::HasSeenNode(int nodeId) const {
+    return m_seenNodes.count(nodeId) > 0;
+}
+
+void NodeEditorRegistry::MarkNodeSeen(int nodeId) {
+    m_seenNodes.insert(nodeId);
+}
+
 }  // namespace of::ui

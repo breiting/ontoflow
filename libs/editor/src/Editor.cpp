@@ -189,13 +189,13 @@ void Editor::InitializeDemoGraph() {
     StandardLibrary::RegisterAll(backend);
 
     // 1. Spawn Nodes
-    Entity width = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
-    Entity length = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
-    Entity height = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
-    Entity box = NodeRegistry::Instance().SpawnNode(registry, "GEOM_BOX");
-    Entity deflection = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE");
-    Entity filename = NodeRegistry::Instance().SpawnNode(registry, "STRING_VALUE");
-    Entity exportStl = NodeRegistry::Instance().SpawnNode(registry, "SINK_SAVE_STL");
+    Entity width = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Width");
+    Entity length = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Height");
+    Entity height = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Length");
+    Entity box = NodeRegistry::Instance().SpawnNode(registry, "GEOM_BOX", "Box 1");
+    Entity deflection = NodeRegistry::Instance().SpawnNode(registry, "FLOAT_VALUE", "Deflection");
+    Entity filename = NodeRegistry::Instance().SpawnNode(registry, "STRING_VALUE", "FileName");
+    Entity exportStl = NodeRegistry::Instance().SpawnNode(registry, "SINK_SAVE_STL", "ExportSTL", {200, 200});
 
     // 2. Set Values
     registry.GetComponent<NodeComponent>(width)->outputs[0].value = 5.0;

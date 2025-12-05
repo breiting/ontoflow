@@ -16,7 +16,8 @@ void NodeRegistry::RegisterNode(const std::string& opID, const NodeDefinition& d
     LOG(Info) << "NodeRegistry: Registered " << opID;
 }
 
-domain::Entity NodeRegistry::SpawnNode(domain::Registry& registry, const std::string& opID) {
+domain::Entity NodeRegistry::SpawnNode(domain::Registry& registry, const std::string& opID, const std::string& name,
+                                       const glm::vec2& ui) {
     auto it = m_Definitions.find(opID);
     if (it == m_Definitions.end()) {
         LOG(Error) << "NodeRegistry: Cannot spawn unknown node type " << opID;
@@ -31,9 +32,15 @@ domain::Entity NodeRegistry::SpawnNode(domain::Registry& registry, const std::st
     nodeComp.inputs = def.inputs;
     nodeComp.outputs = def.outputs;
     nodeComp.isDirty = true;
+    nodeComp.ui = ui;
+
+    auto componentName = name;
+    if (componentName.empty()) {
+        componentName = def.name;
+    }
 
     registry.AddComponent<domain::NodeComponent>(e, nodeComp);
-    registry.AddComponent<domain::NameComponent>(e, domain::NameComponent{def.name});
+    registry.AddComponent<domain::NameComponent>(e, domain::NameComponent{componentName});
 
     return e;
 }

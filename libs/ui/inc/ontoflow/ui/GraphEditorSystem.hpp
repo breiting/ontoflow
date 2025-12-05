@@ -40,12 +40,16 @@ class GraphEditorSystem {
    private:
     bool DrawNodeEditorInternal();
     glm::vec2 GetMouseGridPos() const;
+    /// Draw a single node and return true if its internal state changed.
+    bool DrawSingleNode(domain::Entity e, domain::NodeComponent& node, domain::NameComponent* nameComp);
+    void DrawThinSeparator(float thickness = 1.0f);
+    void DumpNodePositions() const;
 
    private:
-    domain::Registry& m_registry;
-    NodeEditorRegistry& m_editorReg;
+    domain::Registry& m_Registry;
+    NodeEditorRegistry& m_EditorReg;
 
-    glm::vec2 m_spawnPos{0.f, 0.f};
+    glm::vec2 m_SpawnPos{0.f, 0.f};
 };
 
 }  // namespace of::ui
