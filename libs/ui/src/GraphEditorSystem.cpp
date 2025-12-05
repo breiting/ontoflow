@@ -1,8 +1,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imnodes.h>
-#include <map>
 
+#include <map>
 #include <ontoflow/core/Colors.hpp>
 #include <ontoflow/core/Logger.hpp>
 #include <ontoflow/domain/Components.hpp>
@@ -32,7 +32,9 @@ void GraphEditorSystem::ApplyTheme() {
     style.FramePadding = ImVec2(6, 4);
 
     // Colors (Nord)
-    auto toImVec4 = [](const glm::vec4& v) { return ImVec4(v.r, v.g, v.b, v.a); };
+    auto toImVec4 = [](const glm::vec4& v) {
+        return ImVec4(v.r, v.g, v.b, v.a);
+    };
 
     style.Colors[ImGuiCol_Text] = toImVec4(nord::Nord6);
     style.Colors[ImGuiCol_WindowBg] = toImVec4(nord::Nord0);
@@ -60,24 +62,24 @@ void GraphEditorSystem::ApplyTheme() {
     // ImNodes Style
     ImNodes::StyleColorsDark();
     ImNodesStyle& nStyle = ImNodes::GetStyle();
-    nStyle.Colors[ImNodesCol_GridBackground] = IM_COL32(46, 52, 64, 255); // Nord0
-    nStyle.Colors[ImNodesCol_GridLine] = IM_COL32(59, 66, 82, 255);       // Nord1
-    nStyle.Colors[ImNodesCol_NodeBackground] = IM_COL32(59, 66, 82, 255); // Nord1
-    nStyle.Colors[ImNodesCol_NodeBackgroundHovered] = IM_COL32(67, 76, 94, 255); // Nord2
-    nStyle.Colors[ImNodesCol_NodeBackgroundSelected] = IM_COL32(76, 86, 106, 255); // Nord3
+    nStyle.Colors[ImNodesCol_GridBackground] = IM_COL32(46, 52, 64, 255);           // Nord0
+    nStyle.Colors[ImNodesCol_GridLine] = IM_COL32(59, 66, 82, 255);                 // Nord1
+    nStyle.Colors[ImNodesCol_NodeBackground] = IM_COL32(59, 66, 82, 255);           // Nord1
+    nStyle.Colors[ImNodesCol_NodeBackgroundHovered] = IM_COL32(67, 76, 94, 255);    // Nord2
+    nStyle.Colors[ImNodesCol_NodeBackgroundSelected] = IM_COL32(76, 86, 106, 255);  // Nord3
     nStyle.Colors[ImNodesCol_TitleBar] = IM_COL32(59, 66, 82, 255);
     nStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(76, 86, 106, 255);
-    nStyle.Colors[ImNodesCol_Link] = IM_COL32(216, 222, 233, 255); // Nord4
-    nStyle.Colors[ImNodesCol_LinkSelected] = IM_COL32(248, 179, 182, 255); // Ghibli Flower (Pink)
-    nStyle.Colors[ImNodesCol_Pin] = IM_COL32(136, 192, 208, 255); // Nord8
-    nStyle.Colors[ImNodesCol_PinHovered] = IM_COL32(129, 161, 193, 255); // Nord9
+    nStyle.Colors[ImNodesCol_Link] = IM_COL32(216, 222, 233, 255);          // Nord4
+    nStyle.Colors[ImNodesCol_LinkSelected] = IM_COL32(248, 179, 182, 255);  // Ghibli Flower (Pink)
+    nStyle.Colors[ImNodesCol_Pin] = IM_COL32(136, 192, 208, 255);           // Nord8
+    nStyle.Colors[ImNodesCol_PinHovered] = IM_COL32(129, 161, 193, 255);    // Nord9
 
-    // Make selected nodes pop with a border/outline change if supported, 
+    // Make selected nodes pop with a border/outline change if supported,
     // or just via TitleBar/BackgroundSelected.
     // Let's use the Ghibli Flower color for selection highlights to make it distinct.
-    nStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(248, 179, 182, 255); // Ghibli Flower
-    nStyle.Colors[ImNodesCol_NodeOutline] = IM_COL32(46, 52, 64, 255); // Nord0
-    
+    nStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(248, 179, 182, 255);  // Ghibli Flower
+    nStyle.Colors[ImNodesCol_NodeOutline] = IM_COL32(46, 52, 64, 255);          // Nord0
+
     nStyle.NodeCornerRounding = 5.0f;
     nStyle.NodePadding = ImVec2(12, 8);
     nStyle.PinCircleRadius = 4.0f;
@@ -98,7 +100,7 @@ EditorAction GraphEditorSystem::DrawLayout(StatusBar& statusBar) {
     // Fixed dimensions
     const float toolbarWidth = 64.0f;
     const float libraryWidth = 250.0f;
-    const float bottomHeight = 40.0f; // Increased height
+    const float bottomHeight = 40.0f;  // Increased height
     const float centerWidth = workSize.x - toolbarWidth - libraryWidth;
     const float centerHeight = workSize.y - bottomHeight;
 
@@ -135,14 +137,23 @@ EditorAction GraphEditorSystem::DrawLayout(StatusBar& statusBar) {
     // 4. Bottom Status (Drawn last to stay on top)
     ImGui::SetNextWindowPos({workPos.x, workPos.y + centerHeight}, ImGuiCond_Always);
     ImGui::SetNextWindowSize({workSize.x, bottomHeight}, ImGuiCond_Always);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(46, 52, 64, 255)); // Nord0
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 8.0f)); // Adjusted padding
-    if (ImGui::Begin("StatusBar", nullptr, windowFlags | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(46, 52, 64, 255));    // Nord0
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 8.0f));  // Adjusted padding
+    if (ImGui::Begin("StatusBar", nullptr,
+                     windowFlags | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
         statusBar.Draw(ImGui::GetIO().DeltaTime);
     }
     ImGui::End();
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
+
+    // --- Draw Inspector (Modal) ---
+    InspectorAction inspAction = m_Inspector.Draw(m_Registry);
+    if (inspAction == InspectorAction::Delete) {
+        DeleteNode(m_Inspector.GetTarget());
+    } else if (inspAction == InspectorAction::Save) {
+        // Saved automatically by inspector
+    }
 
     return action;
 }
@@ -162,19 +173,25 @@ EditorAction GraphEditorSystem::DrawToolbar() {
     EditorAction result = EditorAction::None;
 
     ImGui::Dummy(ImVec2(0, 10));
-    if (toolBtn("[+]", EditorAction::None)) { /* New */ }
-    if (toolBtn("[S]", EditorAction::Save)) result = EditorAction::Save;
-    if (toolBtn("[L]", EditorAction::Load)) result = EditorAction::Load;
-    if (toolBtn("[C]", EditorAction::Clear)) result = EditorAction::Clear;
+    if (toolBtn("[+]", EditorAction::None)) { /* New */
+    }
+    if (toolBtn("[S]", EditorAction::Save))
+        result = EditorAction::Save;
+    if (toolBtn("[L]", EditorAction::Load))
+        result = EditorAction::Load;
+    if (toolBtn("[C]", EditorAction::Clear))
+        result = EditorAction::Clear;
 
     // Spacer
     ImGui::Dummy(ImVec2(0, 20));
     ImGui::TextDisabled("|");
     ImGui::Dummy(ImVec2(0, 20));
 
-    if (toolBtn("[E]", EditorAction::Evaluate)) result = EditorAction::Evaluate;
-    if (toolBtn("[D]", EditorAction::Dump)) result = EditorAction::Dump;
-    
+    if (toolBtn("[E]", EditorAction::Evaluate))
+        result = EditorAction::Evaluate;
+    if (toolBtn("[D]", EditorAction::Dump))
+        result = EditorAction::Dump;
+
     return result;
 }
 
@@ -187,9 +204,9 @@ void GraphEditorSystem::DrawNodeLibrary() {
     ImGui::Dummy(ImVec2(0, 10));
 
     const auto& defs = engine::NodeRegistry::Instance().GetDefinitions();
-    
+
     std::map<std::string, std::vector<const engine::NodeDefinition*>> categorized;
-    for(const auto& [id, def] : defs) {
+    for (const auto& [id, def] : defs) {
         if (m_NodeFilter.PassFilter(def.name.c_str())) {
             categorized[def.category.empty() ? "General" : def.category].push_back(&def);
         }
@@ -200,11 +217,14 @@ void GraphEditorSystem::DrawNodeLibrary() {
             for (const auto* def : nodes) {
                 ImGui::PushID(def);
                 ImGui::Button(def->name.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 0));
-                
+
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
                     std::string opID;
-                    for(const auto& [k, v] : defs) {
-                        if (&v == def) { opID = k; break; }
+                    for (const auto& [k, v] : defs) {
+                        if (&v == def) {
+                            opID = k;
+                            break;
+                        }
                     }
 
                     ImGui::SetDragDropPayload("DND_NODE_DEF", opID.c_str(), opID.size() + 1);
@@ -257,6 +277,16 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
 
     ImNodes::EndNodeEditor();
 
+    // ----------------- DOUBLE CLICK (Inspector) ----------------
+    int hoveredId = -1;
+    if (ImNodes::IsNodeHovered(&hoveredId) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+        domain::Entity e = m_EditorReg.GetNodeEntity(hoveredId);
+        if (e != domain::INVALID_ENTITY) {
+            LOG(Info) << "Open inspector";
+            m_Inspector.Open(e, m_Registry);
+        }
+    }
+
     // ----------------- DRAG & DROP TARGET --------------------
     if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_NODE_DEF")) {
@@ -281,7 +311,7 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
             graphChanged = true;
         }
     }
-    
+
     // ----------------- LINK DELETION ----------------
     // 1. Dropped in void
     int destroyedLink;
@@ -293,13 +323,13 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
             graphChanged = true;
         }
     }
-    
+
     // 2. Explicit Deletion via DELETE key (LINKS)
     const int numSelectedLinks = ImNodes::NumSelectedLinks();
     if (numSelectedLinks > 0 && (ImGui::IsKeyReleased(ImGuiKey_Delete) || ImGui::IsKeyReleased(ImGuiKey_Backspace))) {
         std::vector<int> selectedLinks(numSelectedLinks);
         ImNodes::GetSelectedLinks(selectedLinks.data());
-        
+
         for (int linkId : selectedLinks) {
             auto [node, pin] = m_EditorReg.DecodeLink(linkId);
             if (auto* comp = m_Registry.GetComponent<domain::NodeComponent>(node)) {
@@ -326,8 +356,9 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
             //  But wait! We don't have a reverse map in NodeEditorRegistry public API easily.
             //  Let's check if we can get it. If not, we might need to iterate all nodes to find the match,
             //  OR we can iterate 'allNodes' and check if GetNodeId(e) is in selectedNodes.)
-            
-            // Optimization: Instead of full reverse lookup, let's iterate all entities once and check against selection.
+
+            // Optimization: Instead of full reverse lookup, let's iterate all entities once and check against
+            // selection.
         }
 
         // Better approach:
@@ -344,24 +375,7 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
         }
 
         for (auto eToDelete : nodesToDelete) {
-            // A. Remove connections TO this node (inputs of OTHER nodes pointing here)
-            //    Actually, our graph stores connections in the INPUTS.
-            //    So we need to check every node's inputs to see if they point to 'eToDelete'.
-            for (auto otherE : allNodes) {
-                if (otherE == eToDelete) continue; // Skip self (will be destroyed anyway)
-                auto* otherNode = m_Registry.GetComponent<domain::NodeComponent>(otherE);
-                if (!otherNode) continue;
-
-                for (auto& pin : otherNode->inputs) {
-                    if (pin.connection.targetNodeID == eToDelete) {
-                        pin.connection = {}; // Sever connection
-                        otherNode->isDirty = true;
-                    }
-                }
-            }
-
-            // B. Destroy the entity
-            m_Registry.DestroyEntity(eToDelete);
+            DeleteNode(eToDelete);
             graphChanged = true;
         }
     }
@@ -386,25 +400,28 @@ bool ToggleSwitch(const char* label, bool* v) {
 
     ImGuiContext& g = *GImGui;
     float ANIM_SPEED = 0.08f;
-    if (g.LastActiveId == g.CurrentWindow->GetID(label)) { // Simple animation state logic
+    if (g.LastActiveId == g.CurrentWindow->GetID(label)) {  // Simple animation state logic
         float t_anim = ImSaturate(g.LastActiveIdTimer / ANIM_SPEED);
         t = *v ? (t_anim) : (1.0f - t_anim);
     }
 
     ImU32 col_bg;
     if (ImGui::IsItemHovered())
-        col_bg = ImGui::GetColorU32(*v ? ImVec4(0.56f, 0.84f, 0.90f, 1.0f) : ImVec4(0.35f, 0.39f, 0.48f, 1.0f)); // Nord9 : Nord3
+        col_bg = ImGui::GetColorU32(*v ? ImVec4(0.56f, 0.84f, 0.90f, 1.0f)
+                                       : ImVec4(0.35f, 0.39f, 0.48f, 1.0f));  // Nord9 : Nord3
     else
-        col_bg = ImGui::GetColorU32(*v ? ImVec4(0.53f, 0.75f, 0.82f, 1.0f) : ImVec4(0.29f, 0.34f, 0.42f, 1.0f)); // Nord8 : Nord2
+        col_bg = ImGui::GetColorU32(*v ? ImVec4(0.53f, 0.75f, 0.82f, 1.0f)
+                                       : ImVec4(0.29f, 0.34f, 0.42f, 1.0f));  // Nord8 : Nord2
 
     draw_list->AddRectFilled(p, ImVec2(p.x + width, p.y + height), col_bg, height * 0.5f);
-    draw_list->AddCircleFilled(ImVec2(p.x + radius + t * (width - radius * 2.0f), p.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
-    
+    draw_list->AddCircleFilled(ImVec2(p.x + radius + t * (width - radius * 2.0f), p.y + radius), radius - 1.5f,
+                               IM_COL32(255, 255, 255, 255));
+
     // Label
     ImGui::SameLine();
-    ImGui::Text("%s", ""); // Use empty label to align, render label manually if needed or let caller handle
+    ImGui::Text("%s", "");  // Use empty label to align, render label manually if needed or let caller handle
 
-    return *v; 
+    return *v;
 }
 
 bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& node, domain::NameComponent* nameComp) {
@@ -413,7 +430,7 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
     int uiNode = m_EditorReg.GetNodeId(e);
 
     const auto* def = engine::NodeRegistry::Instance().GetDefinition(node.definitionID);
-    
+
     std::string displayName;
     if (nameComp && !nameComp->name.empty())
         displayName = nameComp->name;
@@ -477,10 +494,10 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
                 bool v = false;
                 if (auto* pv = std::get_if<bool>(&pin.value))
                     v = *pv;
-                
+
                 // Use Custom Toggle Switch
                 bool oldV = v;
-                ToggleSwitch("##val", &v); 
+                ToggleSwitch("##val", &v);
                 if (v != oldV) {
                     pin.value = v;
                     node.isDirty = true;
@@ -542,19 +559,19 @@ bool GraphEditorSystem::DrawSingleNode(domain::Entity e, domain::NodeComponent& 
             int pinId = m_EditorReg.GetPinId(e, i, true);
 
             ImNodes::BeginOutputAttribute(pinId);
-            
+
             // Use fixed width for alignment to avoid expansion loop
             float textWidth = ImGui::CalcTextSize(pin.name.c_str()).x;
             float spacing = ImGui::GetStyle().ItemSpacing.x;
-            
+
             // Calculate offset based on the fixed width
             float offsetX = NODE_WIDTH - textWidth - spacing;
-            
+
             if (offsetX > 0) {
-                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
             }
             ImGui::Text("%s", pin.name.c_str());
-            
+
             ImNodes::EndOutputAttribute();
         }
     }
@@ -582,6 +599,29 @@ void GraphEditorSystem::DumpNodePositions() const {
         LOG(Info) << "Node ID=" << e << " Pos=(" << node->ui.x << ", " << node->ui.y << ")";
     }
     LOG(Info) << "------------------------";
+}
+
+void GraphEditorSystem::DeleteNode(domain::Entity eToDelete) {
+    auto allNodes = m_Registry.GetEntitiesWith<domain::NodeComponent>();
+
+    // 1. Remove connections TO this node
+    for (auto otherE : allNodes) {
+        if (otherE == eToDelete)
+            continue;  // Skip self
+        auto* otherNode = m_Registry.GetComponent<domain::NodeComponent>(otherE);
+        if (!otherNode)
+            continue;
+
+        for (auto& pin : otherNode->inputs) {
+            if (pin.connection.targetNodeID == eToDelete) {
+                pin.connection = {};  // Sever connection
+                otherNode->isDirty = true;
+            }
+        }
+    }
+
+    // 2. Destroy entity
+    m_Registry.DestroyEntity(eToDelete);
 }
 
 }  // namespace of::ui

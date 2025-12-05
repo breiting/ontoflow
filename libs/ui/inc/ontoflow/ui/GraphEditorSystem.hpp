@@ -10,6 +10,7 @@
 #include <imgui.h>
 #include <ontoflow/domain/Registry.hpp>
 #include <ontoflow/ui/NodeEditorRegistry.hpp>
+#include <ontoflow/ui/NodeInspector.hpp>
 #include <ontoflow/ui/StatusBar.hpp>
 #include <string>
 
@@ -50,6 +51,7 @@ class GraphEditorSystem {
     bool DrawSingleNode(domain::Entity e, domain::NodeComponent& node, domain::NameComponent* nameComp);
     void DrawThinSeparator(float thickness = 1.0f);
     void DumpNodePositions() const;
+    void DeleteNode(domain::Entity e);
 
    private:
     domain::Registry& m_Registry;
@@ -57,6 +59,8 @@ class GraphEditorSystem {
 
     glm::vec2 m_SpawnPos{0.f, 0.f};
     ImGuiTextFilter m_NodeFilter;
+
+    NodeInspector m_Inspector;
 };
 
 }  // namespace of::ui
