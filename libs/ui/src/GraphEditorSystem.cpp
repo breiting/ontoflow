@@ -68,10 +68,16 @@ void GraphEditorSystem::ApplyTheme() {
     nStyle.Colors[ImNodesCol_TitleBar] = IM_COL32(59, 66, 82, 255);
     nStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(76, 86, 106, 255);
     nStyle.Colors[ImNodesCol_Link] = IM_COL32(216, 222, 233, 255); // Nord4
-    nStyle.Colors[ImNodesCol_LinkSelected] = IM_COL32(136, 192, 208, 255); // Nord8
+    nStyle.Colors[ImNodesCol_LinkSelected] = IM_COL32(248, 179, 182, 255); // Ghibli Flower (Pink)
     nStyle.Colors[ImNodesCol_Pin] = IM_COL32(136, 192, 208, 255); // Nord8
     nStyle.Colors[ImNodesCol_PinHovered] = IM_COL32(129, 161, 193, 255); // Nord9
 
+    // Make selected nodes pop with a border/outline change if supported, 
+    // or just via TitleBar/BackgroundSelected.
+    // Let's use the Ghibli Flower color for selection highlights to make it distinct.
+    nStyle.Colors[ImNodesCol_TitleBarSelected] = IM_COL32(248, 179, 182, 255); // Ghibli Flower
+    nStyle.Colors[ImNodesCol_NodeOutline] = IM_COL32(46, 52, 64, 255); // Nord0
+    
     nStyle.NodeCornerRounding = 5.0f;
     nStyle.NodePadding = ImVec2(12, 8);
     nStyle.PinCircleRadius = 4.0f;
