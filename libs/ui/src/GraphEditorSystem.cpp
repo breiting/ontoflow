@@ -296,7 +296,7 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
     
     // 2. Explicit Deletion via DELETE key (LINKS)
     const int numSelectedLinks = ImNodes::NumSelectedLinks();
-    if (numSelectedLinks > 0 && ImGui::IsKeyReleased(ImGuiKey_Delete)) {
+    if (numSelectedLinks > 0 && (ImGui::IsKeyReleased(ImGuiKey_Delete) || ImGui::IsKeyReleased(ImGuiKey_Backspace))) {
         std::vector<int> selectedLinks(numSelectedLinks);
         ImNodes::GetSelectedLinks(selectedLinks.data());
         
@@ -312,7 +312,7 @@ bool GraphEditorSystem::DrawNodeEditorInternal() {
 
     // 3. Explicit Deletion via DELETE key (NODES)
     const int numSelectedNodes = ImNodes::NumSelectedNodes();
-    if (numSelectedNodes > 0 && ImGui::IsKeyReleased(ImGuiKey_Delete)) {
+    if (numSelectedNodes > 0 && (ImGui::IsKeyReleased(ImGuiKey_Delete) || ImGui::IsKeyReleased(ImGuiKey_Backspace))) {
         std::vector<int> selectedNodes(numSelectedNodes);
         ImNodes::GetSelectedNodes(selectedNodes.data());
 
